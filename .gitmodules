@@ -1,0 +1,3 @@
+[submodule "payload"]
+	path = payload
+	url = https://github.com/wiiu-env/PayloadFromRPX

@@ -81,7 +81,7 @@ void WiiUScreen::drawLine(const char *msg) {
 }
 
 
-void WiiUScreen::flush() {
+void WiiUScreen::flipBuffers() {
     ScreenUtils::flipBuffers(CONSOLE_SCREEN_BOTH);
 }
 

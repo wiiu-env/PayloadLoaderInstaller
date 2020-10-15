@@ -19,19 +19,21 @@ include $(DEVKITPRO)/wut/share/wut_rules
 #-------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source \
+                source/utils \
+                source/fs
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include source
 
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
+CFLAGS	:=	-g -Wall -O2 -ffunction-sections -fstack-protector-all \
 			$(MACHDEP)
 
 CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__
 
-CXXFLAGS	:= $(CFLAGS)
+CXXFLAGS	:= $(CFLAGS) -std=c++17 
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map)
@@ -81,7 +83,7 @@ endif
 
 export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
+export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)  safe.rpx.o
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
@@ -102,6 +104,7 @@ $(BUILD):
 #-------------------------------------------------------------------------------
 clean:
 	@echo clean ...
+	make clean -C payload
 	@rm -fr $(BUILD) $(TARGET).rpx $(TARGET).elf
 
 #-------------------------------------------------------------------------------
@@ -113,15 +116,36 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #-------------------------------------------------------------------------------
 # main targets
 #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+# main targets
+#-------------------------------------------------------------------------------
+
+safe_payload := ../payload/safe.rpx
+
 all	:	$(OUTPUT).rpx
 
+$(safe_payload): 
+	make -C ../payload
+    
 $(OUTPUT).rpx	:	$(OUTPUT).elf
 $(OUTPUT).elf	:	$(OFILES)
+$(OFILES)       :   safe_payload.h
 
 $(OFILES_SRC)	: $(HFILES_BIN)
 
 #-------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
+#-------------------------------------------------------------------------------
+safe_payload.h: $(safe_payload)
+	@bin2s -a 32 -H `(echo $(<F) | tr . _)`.h $< | $(AS) -o $(<F).o
+	@echo '#pragma once'  > $@
+	@printf '#include "' >> $@
+	@(printf $(<F) | tr . _) >> $@
+	@echo '.h"' >> $@
+	@printf '#define RPX_HASH "' >> $@ 
+	@sha1sum $(<) |  cut -f1 -d' ' | tr -d '\n' >> $@
+	@printf '"' >> $@ 
+
 #-------------------------------------------------------------------------------
 %.bin.o	%_bin.h :	%.bin
 #-------------------------------------------------------------------------------
