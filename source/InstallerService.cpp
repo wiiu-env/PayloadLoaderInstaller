@@ -31,7 +31,7 @@ appInformation supportedApps[] = {
 
 
 InstallerService::eResults InstallerService::checkCOS(const std::string &path, char *hash) {
-    std::string cosFilePath = path + "/code/cos1.xml";
+    std::string cosFilePath = path + "/code/cos.xml";
     DEBUG_FUNCTION_LINE("Loading %s", cosFilePath.c_str());
 
     pugi::xml_document doc;
@@ -41,7 +41,7 @@ InstallerService::eResults InstallerService::checkCOS(const std::string &path, c
         return COS_XML_PARSING_FAILED;
     }
 
-    patchCOS(&doc);
+    patchCOSXMLData(&doc);
 
     std::stringstream ss;
     doc.save(ss, "  ", pugi::format_default, pugi::encoding_utf8);
@@ -116,12 +116,17 @@ InstallerService::eResults InstallerService::checkFST(const std::string &path, c
         DEBUG_FUNCTION_LINE("Failed to load title.fst");
         return FAILED_TO_LOAD_FILE;
     }
-    InstallerService::eResults res = patchFST(fstData, fstDataSize);
+    InstallerService::eResults res = patchFSTData(fstData, fstDataSize);
     if (res != SUCCESS) {
+        free(fstData);
+        fstData = nullptr;
         return res;
     }
 
     std::string newHash = Utils::calculateSHA1((const char *) fstData, fstDataSize);
+
+    free(fstData);
+    fstData = nullptr;
 
     if (std::string(fstHash) == newHash) {
         DEBUG_FUNCTION_LINE("title.fst is compatible");
@@ -132,7 +137,7 @@ InstallerService::eResults InstallerService::checkFST(const std::string &path, c
     }
 }
 
-bool InstallerService::patchCOS(pugi::xml_document *doc) {
+bool InstallerService::patchCOSXMLData(pugi::xml_document *doc) {
     pugi::xml_node appEntry = doc->child("app");
     appEntry.child("argstr").first_child().set_value("safe.rpx");
     appEntry.child("avail_size").first_child().set_value("00000000");
@@ -190,7 +195,7 @@ std::optional<appInformation> InstallerService::getInstalledAppInformation() {
     return {};
 }
 
-InstallerService::eResults InstallerService::patchFST(uint8_t *fstData, uint32_t size) {
+InstallerService::eResults InstallerService::patchFSTData(uint8_t *fstData, uint32_t size) {
     auto *fstHeader = (FSTHeader *) fstData;
     if (strncmp(FSTHEADER_MAGIC, fstHeader->magic, 3) != 0) {
         DEBUG_FUNCTION_LINE("FST magic is wrong %s", fstHeader->magic);
@@ -232,47 +237,206 @@ InstallerService::eResults InstallerService::patchFST(uint8_t *fstData, uint32_t
     return InstallerService::SUCCESS;
 }
 
-std::string InstallerService::ErrorMessage(InstallerService::eResults results) {
-    if (results == SUCCESS) {
+std::string InstallerService::ErrorDescription(InstallerService::eResults error) {
+    if (error == SUCCESS) {
         return "Success";
-    } else if (results == NO_COMPATIBLE_APP_INSTALLED) {
+    } else if (error == NO_COMPATIBLE_APP_INSTALLED) {
+        return "No compatible application was found on the console.";
+    } else if (error == FAILED_TO_COPY_FILES) {
+        return "Unable to copy files.";
+    } else if (error == FAILED_TO_CHECK_HASH_COPIED_FILES) {
+        return "The copy of a file has a different hash.";
+    } else if (error == SYSTEM_XML_INFORMATION_NOT_FOUND) {
+        return "Expected hashes for the target system.xml were not found.";
+    } else if (error == SYSTEM_XML_PARSING_FAILED) {
+        return "Failed to parse the system.xml";
+    } else if (error == SYSTEM_XML_HASH_MISMATCH_RESTORE_FAILED) {
+        return "DO NOT REBOOT BEFORE FIXING THIS: Failed to restore the system.xml after an error.";
+    } else if (error == SYSTEM_XML_HASH_MISMATCH) {
+        return "The patched system.xml had an unexpected hash but was successfully restored";
+    } else if (error == RPX_HASH_MISMATCH) {
+        return "The installed safe.rpx had an unexpected hash but was successfully restored";
+    } else if (error == RPX_HASH_MISMATCH_RESTORE_FAILED) {
+        return "DO NOT REBOOT BEFORE FIXING THIS: Failed to restore the safe.rpx after an error.";
+    } else if (error == COS_XML_PARSING_FAILED) {
+        return "Failed to parse the cos.xml";
+    } else if (error == COS_XML_HASH_MISMATCH) {
+        return "The patched cos.xml had an unexpected hash but was successfully restored";
+    } else if (error == COS_XML_HASH_MISMATCH_RESTORE_FAILED) {
+        return "DO NOT REBOOT BEFORE FIXING THIS: Failed to restore the cos.xml after an error";
+    } else if (error == MALLOC_FAILED) {
+        return "Failed to allocate memory";
+    } else if (error == FST_HASH_MISMATCH) {
+        return "The patched title.fst had an unexpected hash but was successfully restored";
+    } else if (error == FST_HASH_MISMATCH_RESTORE_FAILED) {
+        return "DO NOT REBOOT BEFORE FIXING THIS: Failed to restore the title.fst after an error";
+    } else if (error == FST_HEADER_MISMATCH) {
+        return "Unexpected header in title.fst found. The file is probably broken.";
+    } else if (error == FST_NO_USABLE_SECTION_FOUND) {
+        return "Unable to patch title.fst to allow FailST";
+    } else if (error == FAILED_TO_LOAD_FILE) {
+        return "Failed to load file.";
+    } else {
+        return "UNKNOWN ERROR";
+    }
+}
+
+std::string InstallerService::ErrorMessage(InstallerService::eResults error) {
+    if (error == SUCCESS) {
+        return "Success";
+    } else if (error == NO_COMPATIBLE_APP_INSTALLED) {
         return "NO_COMPATIBLE_APP_INSTALLED";
-    } else if (results == FAILED_TO_COPY_FILES) {
+    } else if (error == FAILED_TO_COPY_FILES) {
         return "FAILED_TO_COPY_FILES";
-    } else if (results == FAILED_TO_CHECK_HASH_COPIED_FILES) {
+    } else if (error == FAILED_TO_CHECK_HASH_COPIED_FILES) {
         return "FAILED_TO_CHECK_HASH_COPIED_FILES";
-    } else if (results == SYSTEM_XML_INFORMATION_NOT_FOUND) {
+    } else if (error == SYSTEM_XML_INFORMATION_NOT_FOUND) {
         return "SYSTEM_XML_INFORMATION_NOT_FOUND";
-    } else if (results == SYSTEM_XML_PARSING_FAILED) {
+    } else if (error == SYSTEM_XML_PARSING_FAILED) {
         return "SYSTEM_XML_PARSING_FAILED";
-    } else if (results == SYSTEM_XML_HASH_MISMATCH_RESTORE_FAILED) {
+    } else if (error == SYSTEM_XML_HASH_MISMATCH_RESTORE_FAILED) {
         return "SYSTEM_XML_HASH_MISMATCH_RESTORE_FAILED";
-    } else if (results == SYSTEM_XML_HASH_MISMATCH) {
+    } else if (error == SYSTEM_XML_HASH_MISMATCH) {
         return "SYSTEM_XML_HASH_MISMATCH";
-    } else if (results == RPX_HASH_MISMATCH) {
+    } else if (error == RPX_HASH_MISMATCH) {
         return "RPX_HASH_MISMATCH";
-    } else if (results == RPX_HASH_MISMATCH_RESTORE_FAILED) {
+    } else if (error == RPX_HASH_MISMATCH_RESTORE_FAILED) {
         return "RPX_HASH_MISMATCH_RESTORE_FAILED";
-    } else if (results == COS_XML_PARSING_FAILED) {
+    } else if (error == COS_XML_PARSING_FAILED) {
         return "COS_XML_PARSING_FAILED";
-    } else if (results == COS_XML_HASH_MISMATCH) {
+    } else if (error == COS_XML_HASH_MISMATCH) {
         return "COS_XML_HASH_MISMATCH";
-    } else if (results == COS_XML_HASH_MISMATCH_RESTORE_FAILED) {
+    } else if (error == COS_XML_HASH_MISMATCH_RESTORE_FAILED) {
         return "COS_XML_HASH_MISMATCH_RESTORE_FAILED";
-    } else if (results == MALLOC_FAILED) {
+    } else if (error == MALLOC_FAILED) {
         return "MALLOC_FAILED";
-    } else if (results == FST_HASH_MISMATCH) {
+    } else if (error == FST_HASH_MISMATCH) {
         return "FST_HASH_MISMATCH";
-    } else if (results == FST_HASH_MISMATCH_RESTORE_FAILED) {
+    } else if (error == FST_HASH_MISMATCH_RESTORE_FAILED) {
         return "FST_HASH_MISMATCH_RESTORE_FAILED";
-    } else if (results == FST_HEADER_MISMATCH) {
+    } else if (error == FST_HEADER_MISMATCH) {
         return "FST_HEADER_MISMATCH";
-    } else if (results == FST_NO_USABLE_SECTION_FOUND) {
+    } else if (error == FST_NO_USABLE_SECTION_FOUND) {
         return "FST_NO_USABLE_SECTION_FOUND";
-    }  else if (results == FAILED_TO_LOAD_FILE) {
+    } else if (error == FAILED_TO_LOAD_FILE) {
         return "FAILED_TO_LOAD_FILE";
     } else {
         return "UNKNOWN ERROR";
     }
 
+}
+
+InstallerService::eResults InstallerService::patchFST(const std::string &path, const char *fstHash) {
+    std::string fstFilePath = path + "/code/title.fst";
+    std::string fstBackupFilePath = path + "/code/backup.fst";
+    std::string fstTargetFilePath = path + "/code/titla.fst";
+
+    if (!FSUtils::copyFile(fstFilePath, fstBackupFilePath)) {
+        DEBUG_FUNCTION_LINE("Failed to copy files");
+        return FAILED_TO_COPY_FILES;
+    }
+
+    std::string srcHash = Utils::hashFile(fstFilePath);
+    std::string dstHash = Utils::hashFile(fstBackupFilePath);
+
+    if (srcHash != dstHash) {
+        ::remove(fstBackupFilePath.c_str());
+        DEBUG_FUNCTION_LINE("Hashes do not match. %s %s", srcHash.c_str(), dstHash.c_str());
+        return FAILED_TO_CHECK_HASH_COPIED_FILES;
+    }
+
+    uint8_t *fstData = nullptr;
+    uint32_t fstDataSize = 0;
+
+    DEBUG_FUNCTION_LINE("Trying to load FST from %s", fstFilePath.c_str());
+    if (FSUtils::LoadFileToMem(fstFilePath.c_str(), &fstData, &fstDataSize) < 0) {
+        DEBUG_FUNCTION_LINE("Failed to load title.fst");
+        return FAILED_TO_LOAD_FILE;
+    }
+    InstallerService::eResults res = patchFSTData(fstData, fstDataSize);
+    if (res != SUCCESS) {
+        free(fstData);
+        return res;
+    }
+    FSUtils::saveBufferToFile(fstTargetFilePath.c_str(), fstData, fstDataSize);
+    free(fstData);
+    fstData = nullptr;
+
+    std::string newHash = Utils::hashFile(fstTargetFilePath);
+
+    if (std::string(fstHash) == newHash) {
+        ::remove(fstBackupFilePath.c_str());
+        DEBUG_FUNCTION_LINE("Successfully patched the title.fst");
+        return SUCCESS;
+    } else {
+        DEBUG_FUNCTION_LINE("Hash mismatch! Expected %s but got %s while patching FST", fstHash, newHash.c_str());
+    }
+
+    FSUtils::copyFile(fstBackupFilePath, fstTargetFilePath);
+
+    std::string srcHash2 = Utils::hashFile(fstTargetFilePath);
+
+    if (srcHash != srcHash2) {
+        DEBUG_FUNCTION_LINE("Something went wrong. Failed to restore the title.fst. DO NOT RESTART THE SYSTEM until you manually restored the title.fst");
+        return FST_HASH_MISMATCH_RESTORE_FAILED;
+    }
+
+    ::remove(fstBackupFilePath.c_str());
+
+    return FST_HASH_MISMATCH;
+}
+
+InstallerService::eResults InstallerService::patchCOS(const std::string &path, char *hash) {
+    std::string cosFilePath = path + "/code/cos.xml";
+    std::string cosBackupFilePath = path + "/code/cback.xml";
+    std::string cosTargetFilePath = path + "/code/cos.xml";
+
+    if (!FSUtils::copyFile(cosFilePath, cosBackupFilePath)) {
+        DEBUG_FUNCTION_LINE("Failed to copy files");
+        return FAILED_TO_COPY_FILES;
+    }
+
+    std::string srcHash = Utils::hashFile(cosFilePath);
+    std::string dstHash = Utils::hashFile(cosBackupFilePath);
+
+    if (srcHash != dstHash) {
+        ::remove(cosBackupFilePath.c_str());
+        DEBUG_FUNCTION_LINE("Hashes do not match. %s %s", srcHash.c_str(), dstHash.c_str());
+        return FAILED_TO_CHECK_HASH_COPIED_FILES;
+    }
+
+    pugi::xml_document doc;
+    pugi::xml_parse_result result = doc.load_file(cosFilePath.c_str());
+
+    if (!result) {
+        ::remove(cosBackupFilePath.c_str());
+        DEBUG_FUNCTION_LINE("failed to open %s : %s", cosFilePath.c_str(), result.description());
+        return COS_XML_PARSING_FAILED;
+    }
+
+    patchCOSXMLData(&doc);
+
+    doc.save_file(cosTargetFilePath.c_str(), "  ", pugi::format_default, pugi::encoding_utf8);
+
+    std::string newHash = Utils::hashFile(cosTargetFilePath);
+
+    if (std::string(hash) == newHash) {
+        ::remove(cosBackupFilePath.c_str());
+        DEBUG_FUNCTION_LINE("Successfully patched the cos.xml");
+        return SUCCESS;
+    } else {
+        DEBUG_FUNCTION_LINE("Hash mismatch! Expected %s but got %s while patching cos.xml", hash, newHash.c_str());
+    }
+
+    FSUtils::copyFile(cosBackupFilePath, cosTargetFilePath);
+
+    std::string srcHash2 = Utils::hashFile(cosTargetFilePath);
+
+    if (srcHash != srcHash2) {
+        DEBUG_FUNCTION_LINE("Something went wrong. Failed to restore the title.fst. DO NOT RESTART THE SYSTEM until you manually restored the cos.xml");
+        return COS_XML_HASH_MISMATCH_RESTORE_FAILED;
+    }
+    ::remove(cosBackupFilePath.c_str());
+
+    return COS_XML_HASH_MISMATCH;
 }

@@ -55,7 +55,7 @@ bool WiiUScreen::Init() {
 void WiiUScreen::DeInit() {
     if (sConsoleHasForeground) {
         OSScreenShutdown();
-        WiiUScreen::ProcCallbackReleased(NULL);
+        WiiUScreen::ProcCallbackReleased(nullptr);
     }
 }
 
@@ -76,10 +76,13 @@ void WiiUScreen::drawLinef(const char *fmt, ...) {
     va_end(va);
 }
 
+void WiiUScreen::drawLine() {
+    WiiUScreen::drawLine("");
+}
+
 void WiiUScreen::drawLine(const char *msg) {
     ScreenUtils::printTextOnScreen(CONSOLE_SCREEN_BOTH, 0, consoleCursorY++, msg);
 }
-
 
 void WiiUScreen::flipBuffers() {
     ScreenUtils::flipBuffers(CONSOLE_SCREEN_BOTH);

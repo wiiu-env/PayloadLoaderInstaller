@@ -28,6 +28,8 @@ public:
         FAILED_TO_LOAD_FILE = -18,
     };
 
+    static eResults patchCOS(const std::string &path, char *hash);
+
     static eResults checkCOS(const std::string &path, char *hash);
 
     static eResults checkSystemXML(const std::string &path, uint64_t titleId);
@@ -36,10 +38,14 @@ public:
 
     static std::optional<appInformation> getInstalledAppInformation();
 
-    static std::string ErrorMessage(eResults results);
+    static std::string ErrorMessage(eResults error);
+    static std::string ErrorDescription(eResults error);
+
+    static eResults patchFST(const std::string &path, const char *hash);
+
 
 private:
-    static eResults patchFST(uint8_t *data, uint32_t size);
+    static eResults patchFSTData(uint8_t *fstData, uint32_t size);
 
-    static bool patchCOS(pugi::xml_document *doc);
+    static bool patchCOSXMLData(pugi::xml_document *doc);
 };

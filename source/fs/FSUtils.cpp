@@ -9,7 +9,7 @@
 
 int32_t FSUtils::LoadFileToMem(const char *filepath, uint8_t **inbuffer, uint32_t *size) {
     //! always initialze input
-    *inbuffer = NULL;
+    *inbuffer = nullptr;
     if (size)
         *size = 0;
 
@@ -20,8 +20,8 @@ int32_t FSUtils::LoadFileToMem(const char *filepath, uint8_t **inbuffer, uint32_
     uint32_t filesize = lseek(iFd, 0, SEEK_END);
     lseek(iFd, 0, SEEK_SET);
 
-    uint8_t *buffer = (uint8_t *) malloc(filesize);
-    if (buffer == NULL) {
+    auto *buffer = (uint8_t *) malloc(filesize);
+    if (buffer == nullptr) {
         close(iFd);
         return -2;
     }
@@ -44,7 +44,7 @@ int32_t FSUtils::LoadFileToMem(const char *filepath, uint8_t **inbuffer, uint32_
 
     if (done != filesize) {
         free(buffer);
-        buffer = NULL;
+        buffer = nullptr;
         return -3;
     }
 

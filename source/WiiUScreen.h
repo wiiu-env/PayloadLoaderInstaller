@@ -37,6 +37,9 @@ public:
     static void drawLinef(const char *fmt, ...);
 
     static void drawLine(const char *fmt);
+
+    static void drawLine();
+
     static void flipBuffers();
 
     static void clearScreen();

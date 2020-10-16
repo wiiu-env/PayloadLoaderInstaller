@@ -8,12 +8,14 @@
 #include <iosuhax.h>
 #include <iosuhax_devoptab.h>
 #include <string_view>
+#include <vector>
 #include "WiiUScreen.h"
 #include "utils/logger.h"
 #include "InstallerService.h"
 
 #include "../build/safe_payload.h"
-#include "GameState.h"
+#include "ApplicationState.h"
+#include "VPADInput.h"
 
 constexpr bool strings_equal(char const *a, char const *b) {
     return std::string_view(a) == b;
@@ -25,14 +27,22 @@ void initIOSUHax();
 
 void deInitIOSUHax();
 
+int sFSAFd = -1;
+bool sIosuhaxMount = false;
 
-int hello_thread() {
+int main_loop() {
     DEBUG_FUNCTION_LINE("Creating state");
-    GameState state;
+    ApplicationState state;
+    VPadInput input;
+
+    if (sFSAFd < 0 || !sIosuhaxMount) {
+        state.setError(ApplicationState::eErrorState::ERROR_IOSUHAX_FAILED);
+    }
 
     DEBUG_FUNCTION_LINE("Entering main loop");
     while (WHBProcIsRunning()) {
-        state.update();
+        input.update(1280, 720);
+        state.update(&input);
         state.render();
     }
 
@@ -47,7 +57,7 @@ int main(int argc, char **argv) {
 
     initIOSUHax();
 
-    hello_thread();
+    main_loop();
 
     deInitIOSUHax();
 
@@ -56,9 +66,6 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-
-int sFSAFd = -1;
-bool sIosuhaxMount = false;
 
 void initIOSUHax() {
     sIosuhaxMount = false;
