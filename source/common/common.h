@@ -21,6 +21,7 @@ typedef struct systemXMLInformation {
     SYSTEM_XML_DEFAULT_TITLE_ID type;
     uint64_t titleId;
     char hash[41];
+    char hash2[41];
 } systemXMLInformation;
 
 typedef struct compatApps {
