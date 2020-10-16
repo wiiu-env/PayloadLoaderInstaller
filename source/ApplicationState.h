@@ -26,9 +26,10 @@ public:
         STATE_INSTALL_CONFIRM_DIALOG,
         STATE_INSTALL_STARTED,
         STATE_INSTALL_FST,
-        STATE_INSTALL_SYSTEM_XML,
         STATE_INSTALL_COS,
-        STATE_INSTALL_RPX
+        STATE_INSTALL_RPX,
+        STATE_INSTALL_SYSTEM_XML,
+        STATE_INSTALL_SUCCESS
     };
 
     ApplicationState();
@@ -57,7 +58,7 @@ public:
 
     void proccessMenuNavigation(Input *input, int maxOptionValue);
 
-    bool entrySelected(Input *input);
+    static bool entrySelected(Input *input);
 
     bool installColdboot = false;
     InstallerService::eResults installerError = InstallerService::eResults::SUCCESS;

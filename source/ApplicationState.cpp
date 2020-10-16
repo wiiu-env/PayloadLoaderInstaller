@@ -1,7 +1,12 @@
 #include "ApplicationState.h"
 #include "WiiUScreen.h"
 #include "ScreenUtils.h"
+#include "../build/safe_rpx.h"
+#include "../build/safe_payload.h"
 #include <sysapp/launch.h>
+#include <iosuhax.h>
+
+extern "C" void OSForceFullRelaunch();
 
 void ApplicationState::render() {
     WiiUScreen::clearScreen();
@@ -108,6 +113,10 @@ void ApplicationState::render() {
         WiiUScreen::drawLine("... patching system.xml");
     } else if (this->state == STATE_INSTALL_RPX) {
         WiiUScreen::drawLine("... install safe.rpx");
+    } else if (this->state == STATE_INSTALL_SUCCESS) {
+        WiiUScreen::drawLine("Aroma was successfully installed");
+        WiiUScreen::drawLine();
+        WiiUScreen::drawLine("Press A to reboot the console");
     }
     printFooter();
     WiiUScreen::flipBuffers();
@@ -115,6 +124,7 @@ void ApplicationState::render() {
 
 void ApplicationState::update(Input *input) {
     if (this->state == STATE_ERROR) {
+        OSEnableHomeButtonMenu(true);
         if (entrySelected(input)) {
             SYSLaunchMenu();
         }
@@ -186,24 +196,52 @@ void ApplicationState::update(Input *input) {
     } else if (this->state == STATE_INSTALL_FST) {
         auto result = InstallerService::patchFST(this->appInfo->path, this->appInfo->fstHash);
         if (result != InstallerService::SUCCESS) {
-            this->error = ERROR_INSTALLER_ERROR;
+            setError(ERROR_INSTALLER_ERROR);
             this->installerError = result;
-            this->state = STATE_ERROR;
         } else {
             this->state = STATE_INSTALL_COS;
         }
     } else if (this->state == STATE_INSTALL_COS) {
         auto result = InstallerService::patchCOS(this->appInfo->path, this->appInfo->cosHash);
         if (result != InstallerService::SUCCESS) {
-            this->error = ERROR_INSTALLER_ERROR;
+            setError(ERROR_INSTALLER_ERROR);
             this->installerError = result;
-            this->state = STATE_ERROR;
         } else {
             this->state = STATE_INSTALL_RPX;
         }
     } else if (this->state == STATE_INSTALL_RPX) {
+        auto result = InstallerService::copyRPX(this->appInfo->path, safe_rpx, safe_rpx_size, RPX_HASH);
+        if (result != InstallerService::SUCCESS) {
+            setError(ERROR_INSTALLER_ERROR);
+            this->installerError = result;
+        } else {
+            if (this->installColdboot) {
+                this->state = STATE_INSTALL_SYSTEM_XML;
+            } else {
+                this->state = STATE_INSTALL_SUCCESS;
+            }
+        }
+    } else if (this->state == STATE_INSTALL_SYSTEM_XML) {
+        auto result = InstallerService::patchSystemXML("storage_slc_installer:/config", this->appInfo->titleId);
+        if (result != InstallerService::SUCCESS) {
+            setError(ERROR_INSTALLER_ERROR);
+            this->installerError = result;
+        } else {
+            auto fsaFd = IOSUHAX_FSA_Open();
+            if (fsaFd >= 0) {
+                if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/storage_mlc01") == 0) {
+                    DEBUG_FUNCTION_LINE("Flushed mlc");
+                }
+                IOSUHAX_FSA_Close(fsaFd);
+            } else {
+                DEBUG_FUNCTION_LINE("Failed to open fsa");
+            }
+            this->state = STATE_INSTALL_SUCCESS;
+        }
+    } else if (this->state == STATE_INSTALL_SUCCESS) {
         if (entrySelected(input)) {
-            this->state = STATE_WELCOME_SCREEN;
+            OSForceFullRelaunch();
+            SYSLaunchMenu();
         }
     }
 }
@@ -280,9 +318,10 @@ std::string ApplicationState::ErrorDescription() {
     return "UNKNOWN_ERROR";
 }
 
-void ApplicationState::setError(eErrorState error) {
+void ApplicationState::setError(eErrorState err) {
     this->state = STATE_ERROR;
-    this->error = error;
+    this->error = err;
+    OSEnableHomeButtonMenu(true);
 }
 
 void ApplicationState::handleError() {

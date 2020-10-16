@@ -15,20 +15,19 @@
 #include <sstream>
 
 systemXMLInformation systemXMLHashInformation[] = {
-        {WII_U_MENU_JAP,    0x0005001010040000, "2645065A42D18D390C78543E3C4FE7E1D1957A63"},
-        {WII_U_MENU_USA,    0x0005001010040100, "124562D41A02C7112DDD5F9A8F0EE5DF97E23471"},
-        {WII_U_MENU_EUR,    0x0005001010040200, "F06041A4E5B3F899E748F1BAEB524DE058809F1D"},
-        {HEALTH_SAFETY_JAP, 0x000500101004E000, "066D672824128713F0A7D156142A68B998080148"},
-        {HEALTH_SAFETY_USA, 0x000500101004E100, "0EBCA1DFC0AB7A6A7FE8FB5EAF23179621B726A1"},
-        {HEALTH_SAFETY_EUR, 0x000500101004E200, "DE46EC3E9B823ABA6CB0638D0C4CDEEF9C793BDD"}
+        {WII_U_MENU_JAP,    0x0005001010040000L, "2645065A42D18D390C78543E3C4FE7E1D1957A63"},
+        {WII_U_MENU_USA,    0x0005001010040100L, "124562D41A02C7112DDD5F9A8F0EE5DF97E23471"},
+        {WII_U_MENU_EUR,    0x0005001010040200L, "F06041A4E5B3F899E748F1BAEB524DE058809F1D"},
+        {HEALTH_SAFETY_JAP, 0x000500101004E000L, "066D672824128713F0A7D156142A68B998080148"},
+        {HEALTH_SAFETY_USA, 0x000500101004E100L, "0EBCA1DFC0AB7A6A7FE8FB5EAF23179621B726A1"},
+        {HEALTH_SAFETY_EUR, 0x000500101004E200L, "DE46EC3E9B823ABA6CB0638D0C4CDEEF9C793BDD"}
 };
 
 appInformation supportedApps[] = {
-        {0x000500101004E000, "Health and Safety Information [JPN]", false, {'\0'}, "9D34DDD91604D781FDB0727AC75021833304964C", "0"},
-        {0x000500101004E100, "Health and Safety Information [USA]", false, {'\0'}, "045734666A36C7EF0258A740855886EBDB20D59B", "0"},
-        {0x000500101004E200, "Health and Safety Information [EUR]", false, {'\0'}, "130A76F8B36B36D43B88BBC74393D9AFD9CFD2A4", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03"},
+        {0x000500101004E000L, "Health and Safety Information [JPN]", false, {'\0'}, "9D34DDD91604D781FDB0727AC75021833304964C", "0"},
+        {0x000500101004E100L, "Health and Safety Information [USA]", false, {'\0'}, "045734666A36C7EF0258A740855886EBDB20D59B", "0"},
+        {0x000500101004E200L, "Health and Safety Information [EUR]", false, {'\0'}, "130A76F8B36B36D43B88BBC74393D9AFD9CFD2A4", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03"},
 };
-
 
 InstallerService::eResults InstallerService::checkCOS(const std::string &path, char *hash) {
     std::string cosFilePath = path + "/code/cos.xml";
@@ -329,7 +328,7 @@ std::string InstallerService::ErrorMessage(InstallerService::eResults error) {
 InstallerService::eResults InstallerService::patchFST(const std::string &path, const char *fstHash) {
     std::string fstFilePath = path + "/code/title.fst";
     std::string fstBackupFilePath = path + "/code/backup.fst";
-    std::string fstTargetFilePath = path + "/code/titla.fst";
+    std::string fstTargetFilePath = path + "/code/title.fst";
 
     if (!FSUtils::copyFile(fstFilePath, fstBackupFilePath)) {
         DEBUG_FUNCTION_LINE("Failed to copy files");
@@ -439,4 +438,124 @@ InstallerService::eResults InstallerService::patchCOS(const std::string &path, c
     ::remove(cosBackupFilePath.c_str());
 
     return COS_XML_HASH_MISMATCH;
+}
+
+
+InstallerService::eResults InstallerService::copyRPX(const std::string &path, const uint8_t *rpx_data, size_t size, const std::string &rpx_hash) {
+    std::string rpxSourceFilePath = path + "/code/safe.rpx";
+    std::string rpxBackupFilePath = path + "/code/sbac.rpx";
+    std::string rpxTargetFilePath = path + "/code/safe.rpx";
+
+    if (!FSUtils::copyFile(rpxSourceFilePath, rpxBackupFilePath)) {
+        DEBUG_CONSOLE_LOG("Failed to copy files");
+        return FAILED_TO_COPY_FILES;
+    }
+
+    std::string srcHash = Utils::hashFile(rpxSourceFilePath);
+    std::string dstHash = Utils::hashFile(rpxBackupFilePath);
+
+    if (srcHash != dstHash) {
+        ::remove(rpxBackupFilePath.c_str());
+        DEBUG_CONSOLE_LOG("Hashes do not match. %s %s", srcHash.c_str(), dstHash.c_str());
+        return FAILED_TO_CHECK_HASH_COPIED_FILES;
+    }
+
+    if (FSUtils::saveBufferToFile(rpxTargetFilePath.c_str(), (void *) rpx_data, size) < 0) {
+        DEBUG_CONSOLE_LOG("Cannot save rpx to file %s", rpxTargetFilePath.c_str());
+        return SUCCESS;
+    }
+
+    std::string newHash = Utils::hashFile(rpxTargetFilePath);
+
+    if (StringTools::strCompareIC(rpx_hash, newHash)) {
+        ::remove(rpxBackupFilePath.c_str());
+        DEBUG_CONSOLE_LOG("Successfully patched the safe.rpx");
+        return SUCCESS;
+    } else {
+        DEBUG_CONSOLE_LOG("Hash mismatch! Expected %s but got %s while patching safe.rpx", rpx_hash.c_str(), newHash.c_str());
+    }
+
+    FSUtils::copyFile(rpxBackupFilePath, rpxTargetFilePath);
+
+    std::string srcHash2 = Utils::hashFile(rpxTargetFilePath);
+
+    if (srcHash != srcHash2) {
+        DEBUG_CONSOLE_LOG("Something went wrong. Failed to restore the safe.rpx. DO NOT RESTART THE SYSTEM until you manually restored the safe.rpx");
+        return RPX_HASH_MISMATCH_RESTORE_FAILED;
+    }
+    ::remove(rpxBackupFilePath.c_str());
+
+    return RPX_HASH_MISMATCH;
+}
+
+InstallerService::eResults InstallerService::patchSystemXML(const std::string &path, uint64_t titleId) {
+    std::string inputFile = std::string(path + "/system.xml");
+    std::string backupFile = std::string(path + "/sbackup.xml");
+    std::string finalFile = std::string(path + "/system.xml");
+
+    if (!FSUtils::copyFile(inputFile, backupFile)) {
+        DEBUG_CONSOLE_LOG("Failed to copy files");
+        return FAILED_TO_COPY_FILES;
+    }
+
+    std::string srcHash = Utils::hashFile(inputFile);
+    std::string dstHash = Utils::hashFile(backupFile);
+
+    if (srcHash != dstHash) {
+        ::remove(backupFile.c_str());
+        DEBUG_CONSOLE_LOG("Hashes do not match. %s %s", srcHash.c_str(), dstHash.c_str());
+        return FAILED_TO_CHECK_HASH_COPIED_FILES;
+    }
+
+    systemXMLInformation *data = nullptr;
+    int arrayLength = (sizeof(systemXMLHashInformation) / sizeof(*systemXMLHashInformation));
+    for (int i = 0; i < arrayLength; i++) {
+        if (systemXMLHashInformation[i].titleId == titleId) {
+            data = &systemXMLHashInformation[i];
+            break;
+        }
+    }
+
+    if (data == nullptr) {
+        ::remove(backupFile.c_str());
+        DEBUG_FUNCTION_LINE("Data was NULL");
+        return SYSTEM_XML_INFORMATION_NOT_FOUND;
+    }
+
+    pugi::xml_document doc;
+    pugi::xml_parse_result resultSystem = doc.load_file(inputFile.c_str());
+    if (!resultSystem) {
+        ::remove(backupFile.c_str());
+        DEBUG_FUNCTION_LINE("Error while parsing %s: %s", inputFile.c_str(), resultSystem.description());
+        return SYSTEM_XML_PARSING_FAILED;
+    }
+
+    char tmp[18];
+    snprintf(tmp, 17, "%016llX", data->titleId);
+
+    doc.child("system").child("default_title_id").first_child().set_value(tmp);
+    doc.save_file(finalFile.c_str(), "  ", pugi::format_default, pugi::encoding_utf8);
+
+    std::string newHash = Utils::hashFile(finalFile);
+
+    if (std::string(data->hash) == newHash) {
+        ::remove(backupFile.c_str());
+        DEBUG_FUNCTION_LINE("Successfully patched the system.xml");
+        return SUCCESS;
+    } else {
+        DEBUG_FUNCTION_LINE("Hash mismatch! Expected %s but got %s while setting default titleID to %s", data->hash, newHash.c_str(), data->titleId);
+    }
+
+    FSUtils::copyFile(backupFile, finalFile);
+
+    std::string srcHash2 = Utils::hashFile(finalFile);
+
+    if (srcHash != srcHash2) {
+        DEBUG_FUNCTION_LINE("Something went wrong. Failed to restore the system.xml. DO NOT RESTART THE SYSTEM until you manually restored the system.xml");
+        return SYSTEM_XML_HASH_MISMATCH_RESTORE_FAILED;
+    }
+
+    ::remove(backupFile.c_str());
+
+    return SYSTEM_XML_HASH_MISMATCH;
 }

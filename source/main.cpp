@@ -10,7 +10,6 @@
 #include <string_view>
 #include <vector>
 #include "WiiUScreen.h"
-#include "utils/logger.h"
 #include "InstallerService.h"
 
 #include "../build/safe_payload.h"

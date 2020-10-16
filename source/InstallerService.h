@@ -43,6 +43,10 @@ public:
 
     static eResults patchFST(const std::string &path, const char *hash);
 
+    static eResults copyRPX(const std::string &path, const uint8_t *rpx_data, size_t size, const std::string &rpx_hash);
+
+
+    static eResults patchSystemXML(const std::string &path, uint64_t id);
 
 private:
     static eResults patchFSTData(uint8_t *fstData, uint32_t size);
