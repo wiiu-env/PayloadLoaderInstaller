@@ -210,7 +210,7 @@ void ApplicationState::update(Input *input) {
             this->state = STATE_INSTALL_RPX;
         }
     } else if (this->state == STATE_INSTALL_RPX) {
-        auto result = InstallerService::copyRPX(this->appInfo->path, safe_rpx, safe_rpx_size, RPX_HASH);
+        auto result = InstallerService::copyRPX(this->appInfo->path, root_rpx, root_rpx_size, RPX_HASH);
         if (result != InstallerService::SUCCESS) {
             setError(ERROR_INSTALLER_ERROR);
             this->installerError = result;

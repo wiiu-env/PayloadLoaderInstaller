@@ -83,7 +83,7 @@ endif
 
 export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)  safe.rpx.o
+export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)  root.rpx.o
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
@@ -99,6 +99,7 @@ all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
+	@$(MAKE) --no-print-directory -C payload
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #-------------------------------------------------------------------------------
@@ -120,7 +121,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 # main targets
 #-------------------------------------------------------------------------------
 
-safe_payload := ../payload/safe.rpx
+safe_payload := ../payload/root.rpx
 
 all	:	$(OUTPUT).rpx
 
