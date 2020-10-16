@@ -24,8 +24,8 @@ systemXMLInformation systemXMLHashInformation[] = {
 };
 
 appInformation supportedApps[] = {
-        {0x000500101004E000L, "Health and Safety Information [JPN]", false, {'\0'}, "9D34DDD91604D781FDB0727AC75021833304964C", "0"},
-        {0x000500101004E100L, "Health and Safety Information [USA]", false, {'\0'}, "045734666A36C7EF0258A740855886EBDB20D59B", "0"},
+        {0x000500101004E000L, "Health and Safety Information [JPN]", false, {'\0'}, "9D34DDD91604D781FDB0727AC75021833304964C", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03"},
+        {0x000500101004E100L, "Health and Safety Information [USA]", false, {'\0'}, "045734666A36C7EF0258A740855886EBDB20D59B", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03"},
         {0x000500101004E200L, "Health and Safety Information [EUR]", false, {'\0'}, "130A76F8B36B36D43B88BBC74393D9AFD9CFD2A4", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03"},
 };
 
@@ -51,7 +51,7 @@ InstallerService::eResults InstallerService::checkCOS(const std::string &path, c
         DEBUG_FUNCTION_LINE("Success! cos.xml is compatible");
         return SUCCESS;
     } else {
-        DEBUG_FUNCTION_LINE("Hash mismatch! cos.xml is NOT compatible");
+        DEBUG_FUNCTION_LINE("Hash mismatch! cos.xml is NOT compatible. Expected hash: %s actual hash: %s",hash, newHash.c_str());
     }
 
     return COS_XML_HASH_MISMATCH;
@@ -60,7 +60,7 @@ InstallerService::eResults InstallerService::checkCOS(const std::string &path, c
 InstallerService::eResults InstallerService::checkSystemXML(const std::string &path, uint64_t titleId) {
     std::string inputFile = std::string(path + "/system.xml");
 
-    systemXMLInformation *data = NULL;
+    systemXMLInformation *data = nullptr;
     int arrayLength = (sizeof(systemXMLHashInformation) / sizeof(*systemXMLHashInformation));
     for (int i = 0; i < arrayLength; i++) {
         if (systemXMLHashInformation[i].titleId == titleId) {
@@ -69,7 +69,7 @@ InstallerService::eResults InstallerService::checkSystemXML(const std::string &p
         }
     }
 
-    if (data == NULL) {
+    if (data == nullptr) {
         DEBUG_FUNCTION_LINE("system xml information were not found.");
         return SYSTEM_XML_INFORMATION_NOT_FOUND;
     }
@@ -99,7 +99,7 @@ InstallerService::eResults InstallerService::checkSystemXML(const std::string &p
         DEBUG_FUNCTION_LINE("Success! system.xml is compatible");
         return SUCCESS;
     } else {
-        DEBUG_FUNCTION_LINE("Hash mismatch! system.xml is NOT compatible");
+        DEBUG_FUNCTION_LINE("Hash mismatch! system.xml is NOT compatible. Expected hash: %s actual hash: %s", data->hash, newHash.c_str());
     }
     return SYSTEM_XML_HASH_MISMATCH;
 }
@@ -131,7 +131,7 @@ InstallerService::eResults InstallerService::checkFST(const std::string &path, c
         DEBUG_FUNCTION_LINE("title.fst is compatible");
         return SUCCESS;
     } else {
-        DEBUG_FUNCTION_LINE("title.fst is NOT compatible");
+        DEBUG_FUNCTION_LINE("title.fst is NOT compatible. expected hash: %s actual hash: %s", fstHash, newHash.c_str());
         return FST_HASH_MISMATCH;
     }
 }

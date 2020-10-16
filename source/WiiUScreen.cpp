@@ -9,7 +9,7 @@ void *WiiUScreen::sBufferDRC = nullptr;
 uint32_t WiiUScreen::sBufferSizeTV = 0;
 uint32_t WiiUScreen::sBufferSizeDRC = 0;
 bool WiiUScreen::sConsoleHasForeground = true;
-uint32_t WiiUScreen::consoleColor = 0x993333FF;
+uint32_t WiiUScreen::consoleColor = 0x041F60FF;
 uint32_t WiiUScreen::consoleCursorY = 0;
 
 
