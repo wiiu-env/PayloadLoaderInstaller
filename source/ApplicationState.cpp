@@ -129,6 +129,8 @@ void ApplicationState::render() {
         }
     } else if (this->state == STATE_INSTALL_STARTED) {
         WiiUScreen::drawLine("Installing...");
+    } else if (this->state == STATE_INSTALL_BACKUP) {
+        WiiUScreen::drawLine("... backing up files");
     } else if (this->state == STATE_INSTALL_FST) {
         WiiUScreen::drawLine("... patching title.fst");
     } else if (this->state == STATE_INSTALL_COS) {
@@ -233,7 +235,15 @@ void ApplicationState::update(Input *input) {
             return;
         }
     } else if (this->state == STATE_INSTALL_STARTED) {
-        this->state = STATE_INSTALL_FST;
+        this->state = STATE_INSTALL_BACKUP;
+    } else if (this->state == STATE_INSTALL_BACKUP) {
+        auto result = InstallerService::backupAppFiles(this->appInfo->path);
+        if (result != InstallerService::SUCCESS) {
+            setError(ERROR_INSTALLER_ERROR);
+            this->installerError = result;
+        } else {
+            this->state = STATE_INSTALL_FST;
+        }
     } else if (this->state == STATE_INSTALL_FST) {
         auto result = InstallerService::patchFST(this->appInfo->path, this->appInfo->fstHash);
         if (result != InstallerService::SUCCESS) {
