@@ -327,6 +327,7 @@ InstallerService::eResults InstallerService::backupAppFiles(const std::string &p
     for (auto &backupOp : backupList) {
         std::string backupSrc = path + backupOp[0];
         std::string backupDst = path + backupOp[1];
+        std::string backupSha1 = backupDst + ".sha1";
 
         if (FSUtils::CheckFile(backupDst.c_str())) {
             DEBUG_FUNCTION_LINE("Already backed up: %s", backupSrc.c_str());
@@ -346,6 +347,8 @@ InstallerService::eResults InstallerService::backupAppFiles(const std::string &p
             DEBUG_FUNCTION_LINE("Hashes do not match. %s %s", srcHash.c_str(), dstHash.c_str());
             return FAILED_TO_CHECK_HASH_COPIED_FILES;
         }
+
+        FSUtils::saveBufferToFile(backupSha1.c_str(), srcHash.c_str(), srcHash.size());
     }
 
     DEBUG_FUNCTION_LINE("Successfully backed up app files");
