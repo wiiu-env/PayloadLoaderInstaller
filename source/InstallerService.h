@@ -43,6 +43,8 @@ public:
         return false;
     }
 
+    static eResults backupAppFiles(const std::string &path);
+
     static eResults patchCOS(const std::string &path, char *hash);
 
     static eResults checkCOS(const std::string &path, char *hash);

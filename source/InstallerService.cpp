@@ -317,6 +317,41 @@ std::string InstallerService::ErrorMessage(InstallerService::eResults error) {
 
 }
 
+InstallerService::eResults InstallerService::backupAppFiles(const std::string &path) {
+    std::string backupList[][2] = {
+        {"/code/title.fst", "/content/title.fst.bak"},
+        {"/code/cos.xml",   "/content/cos.xml.bak"  },
+        {"/code/safe.rpx",  "/content/safe.rpx.bak" },
+    };
+
+    for (auto &backupOp : backupList) {
+        std::string backupSrc = path + backupOp[0];
+        std::string backupDst = path + backupOp[1];
+
+        if (FSUtils::CheckFile(backupDst.c_str())) {
+            DEBUG_FUNCTION_LINE("Already backed up: %s", backupSrc.c_str());
+            continue;
+        }
+
+        if (!FSUtils::copyFile(backupSrc, backupDst)) {
+            DEBUG_FUNCTION_LINE("Failed to copy files");
+            return FAILED_TO_COPY_FILES;
+        }
+
+        std::string srcHash = Utils::hashFile(backupSrc);
+        std::string dstHash = Utils::hashFile(backupDst);
+
+        if (srcHash != dstHash) {
+            ::remove(backupDst.c_str());
+            DEBUG_FUNCTION_LINE("Hashes do not match. %s %s", srcHash.c_str(), dstHash.c_str());
+            return FAILED_TO_CHECK_HASH_COPIED_FILES;
+        }
+    }
+
+    DEBUG_FUNCTION_LINE("Successfully backed up app files");
+    return SUCCESS;
+}
+
 InstallerService::eResults InstallerService::patchFST(const std::string &path, const char *fstHash) {
     std::string fstFilePath = path + "/code/title.fst";
     std::string fstBackupFilePath = path + "/code/backup.fst";
