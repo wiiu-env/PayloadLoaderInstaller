@@ -1,12 +1,11 @@
 #include "ApplicationState.h"
 #include "WiiUScreen.h"
 #include "ScreenUtils.h"
-#include "../build/safe_rpx.h"
 #include "../build/safe_payload.h"
 #include <sysapp/launch.h>
 #include <iosuhax.h>
 
-extern "C" void OSForceFullRelaunch();
+extern "C" void OSShutdown();
 
 void ApplicationState::render() {
     WiiUScreen::clearScreen();
@@ -36,22 +35,36 @@ void ApplicationState::render() {
     } else if (this->state == STATE_CHECK_PATCH_POSSIBLE) {
         WiiUScreen::drawLine("Check if console can be patched.");
     } else if (this->state == STATE_CHECK_PATCH_POSSIBLE_DONE) {
-        WiiUScreen::drawLinef("Compatible title: %s", appInfo->appName);
+        WiiUScreen::drawLinef("Compatible title:");
+        WiiUScreen::drawLinef("%s", appInfo->appName);
         WiiUScreen::drawLine();
-        if (this->fstPatchPossible) {
+
+        if (this->fstAlreadyPatched) {
+            WiiUScreen::drawLine("[ X ] title.fst is already patched!");
+        } else if (this->fstPatchPossible) {
             WiiUScreen::drawLine("[ X ] title.fst can be patched!");
         } else {
             WiiUScreen::drawLine("[   ] title.fst can NOT be patched!");
         }
-        if (this->cosPatchPossible) {
+        if (this->cosAlreadyPatched) {
+            WiiUScreen::drawLine("[ X ] cos.xml is already patched!");
+        } else if (this->cosPatchPossible) {
             WiiUScreen::drawLine("[ X ] cos.xml can be patched!");
         } else {
             WiiUScreen::drawLine("[   ] cos.xml can NOT be patched!");
         }
-        if (this->systemXMLPatchPossible) {
-            WiiUScreen::drawLine("[ X ] system.xml can be patched!");
+        if (this->rpxAlreadyPatched) {
+            WiiUScreen::drawLine("[ X ] safe.rpx is already patched!");
         } else {
-            WiiUScreen::drawLine("[   ] system.xml can NOT be patched!");
+            WiiUScreen::drawLine("[ X ] safe.rpx can to be patched!");
+        }
+
+        WiiUScreen::drawLine();
+        WiiUScreen::drawLinef("System is booting into: ");
+        if (this->coldbootTitle == nullptr) {
+            WiiUScreen::drawLinef("%ll016X (Unknown title)", this->coldbootTitleId);
+        } else {
+            WiiUScreen::drawLinef("%ll016X (%s)", this->coldbootTitle->tid, this->coldbootTitle->name);
         }
 
         WiiUScreen::drawLine();
@@ -81,6 +94,17 @@ void ApplicationState::render() {
             WiiUScreen::drawLine("  Back             > Coldboot                   No Coldboot");
         } else if (this->selectedOption == 2) {
             WiiUScreen::drawLine("  Back               Coldboot                 > No Coldboot");
+        }
+    } else if (this->state == STATE_INSTALL_NO_COLDBOOT_ALLOWED) {
+        WiiUScreen::drawLine("Note: To install Aroma as coldboot you need to run this installer");
+        WiiUScreen::drawLine("from an already running Aroma instance (and not the browser)");
+        WiiUScreen::drawLine("After the installation has finished, reboot the console, open the");
+        WiiUScreen::drawLine("Health & Safety app and run the Aroma installer.");
+        WiiUScreen::drawLine();
+        if (this->selectedOption == 0) {
+            WiiUScreen::drawLine("> Back               Install without Coldboot");
+        } else if (this->selectedOption == 1) {
+            WiiUScreen::drawLine("> Back             > Install without Coldboot");
         }
     } else if (this->state == STATE_INSTALL_CONFIRM_DIALOG) {
         WiiUScreen::drawLine("Are you REALLY sure you want to install Aroma?");
@@ -116,7 +140,7 @@ void ApplicationState::render() {
     } else if (this->state == STATE_INSTALL_SUCCESS) {
         WiiUScreen::drawLine("Aroma was successfully installed");
         WiiUScreen::drawLine();
-        WiiUScreen::drawLine("Press A to reboot the console");
+        WiiUScreen::drawLine("Press A to shutdown the console");
     }
     printFooter();
     WiiUScreen::flipBuffers();
@@ -166,6 +190,13 @@ void ApplicationState::update(Input *input) {
             }
         }
     } else if (this->state == STATE_INSTALL_CHOOSE_COLDBOOT) {
+
+        if (!InstallerService::isColdBootAllowed()) {
+            this->installColdboot = false;
+            this->state = STATE_INSTALL_NO_COLDBOOT_ALLOWED;
+            return;
+        }
+
         proccessMenuNavigation(input, 3);
         if (entrySelected(input)) {
             if (this->selectedOption == 0) { // Back
@@ -178,6 +209,16 @@ void ApplicationState::update(Input *input) {
             }
             this->selectedOption = 0;
             return;
+        }
+    } else if (this->state == STATE_INSTALL_NO_COLDBOOT_ALLOWED) {
+        proccessMenuNavigation(input, 2);
+        if (entrySelected(input)) {
+            if (this->selectedOption == 0) {
+                this->state = STATE_CHECK_PATCH_POSSIBLE_DONE;
+            } else {
+                this->state = STATE_INSTALL_CONFIRM_DIALOG;
+            }
+            this->selectedOption = 0;
         }
     } else if (this->state == STATE_INSTALL_CONFIRM_DIALOG) {
         proccessMenuNavigation(input, 2);
@@ -232,6 +273,9 @@ void ApplicationState::update(Input *input) {
                 if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/storage_mlc01") == 0) {
                     DEBUG_FUNCTION_LINE("Flushed mlc");
                 }
+                if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/system") == 0) {
+                    DEBUG_FUNCTION_LINE("Flushed slc");
+                }
                 IOSUHAX_FSA_Close(fsaFd);
             } else {
                 DEBUG_FUNCTION_LINE("Failed to open fsa");
@@ -240,8 +284,7 @@ void ApplicationState::update(Input *input) {
         }
     } else if (this->state == STATE_INSTALL_SUCCESS) {
         if (entrySelected(input)) {
-            OSForceFullRelaunch();
-            SYSLaunchMenu();
+            OSShutdown();
         }
     }
 }
@@ -260,8 +303,26 @@ void ApplicationState::checkPatchPossible() {
         DEBUG_FUNCTION_LINE("ERROR");
         return;
     }
+
+    this->coldbootTitleId = InstallerService::getColdbootTitleId("storage_slc_installer:/config");
+
+    this->coldbootTitle = nullptr;
+    for (int i = 0; GameList[i].tid != 0; i++) {
+        if (GameList[i].tid == this->coldbootTitleId) {
+            this->coldbootTitle = &GameList[i];
+            break;
+        }
+    }
+
     DEBUG_FUNCTION_LINE("CHECK FST");
+
     InstallerService::eResults result;
+
+    this->fstAlreadyPatched = ((result = InstallerService::checkFSTAlreadyValid(this->appInfo->path, this->appInfo->fstHash)) == InstallerService::SUCCESS);
+    this->rpxAlreadyPatched = ((result = InstallerService::checkRPXAlreadyValid(this->appInfo->path, RPX_HASH)) == InstallerService::SUCCESS);
+    this->cosAlreadyPatched = ((result = InstallerService::checkCOSAlreadyValid(this->appInfo->path, this->appInfo->cosHash)) == InstallerService::SUCCESS);
+    this->tmdValid = ((result = InstallerService::checkTMDValid(this->appInfo->path, this->appInfo->tmdHash)) == InstallerService::SUCCESS);
+
     this->fstPatchPossible = ((result = InstallerService::checkFST(this->appInfo->path, this->appInfo->fstHash)) == InstallerService::SUCCESS);
     if (result != InstallerService::SUCCESS) {
         DEBUG_FUNCTION_LINE("ERROR: %s", InstallerService::ErrorMessage(result).c_str());
@@ -281,7 +342,6 @@ void ApplicationState::checkPatchPossible() {
 void ApplicationState::getAppInformation() {
     DEBUG_FUNCTION_LINE("About to call getInstalledAppInformation");
     this->appInfo = InstallerService::getInstalledAppInformation();
-    DEBUG_FUNCTION_LINE("back");
     if (!this->appInfo) {
         DEBUG_FUNCTION_LINE("ERROR =(");
         this->state = STATE_ERROR;

@@ -3,6 +3,7 @@
 #include "utils/pugixml.hpp"
 #include "common/common.h"
 #include <optional>
+#include <coreinit/memorymap.h>
 
 class InstallerService {
 public:
@@ -28,6 +29,20 @@ public:
         FAILED_TO_LOAD_FILE = -18,
     };
 
+    static bool isColdBootAllowed(){
+        if (OSIsAddressValid(0x00FFFFF8)) {
+            uint64_t bootedFrom = *((uint64_t *) 0x00FFFFF8);
+            if (
+                    bootedFrom == 0x000500101004E000L || // H&S JAP
+                    bootedFrom == 0x000500101004E100L || // H&S USA
+                    bootedFrom == 0x000500101004E200L    // H&S EUR
+                    ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static eResults patchCOS(const std::string &path, char *hash);
 
     static eResults checkCOS(const std::string &path, char *hash);
@@ -39,17 +54,29 @@ public:
     static std::optional<appInformation> getInstalledAppInformation();
 
     static std::string ErrorMessage(eResults error);
+
     static std::string ErrorDescription(eResults error);
 
     static eResults patchFST(const std::string &path, const char *hash);
 
     static eResults copyRPX(const std::string &path, const uint8_t *rpx_data, size_t size, const std::string &rpx_hash);
 
-
     static eResults patchSystemXML(const std::string &path, uint64_t id);
+
+    static uint64_t getColdbootTitleId(const std::string &path);
+
+    static eResults checkFSTAlreadyValid(const std::string &path, const std::string &hash);
+
+    static eResults checkTMDValid(const std::string &path, const std::string &hash);
+
+    static eResults checkCOSAlreadyValid(const std::string &path, const std::string &hash);
+
+    static eResults checkRPXAlreadyValid(const std::string &path, const std::string &hash);
 
 private:
     static eResults patchFSTData(uint8_t *fstData, uint32_t size);
 
     static bool patchCOSXMLData(pugi::xml_document *doc);
+
+    static eResults checkFileHash(const std::string &filePath, const std::string &hash);
 };

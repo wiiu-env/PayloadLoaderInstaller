@@ -20,6 +20,7 @@ include $(DEVKITPRO)/wut/share/wut_rules
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source \
+                source/common \
                 source/utils \
                 source/fs
 DATA		:=	data

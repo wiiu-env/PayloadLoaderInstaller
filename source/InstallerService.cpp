@@ -14,21 +14,6 @@
 #include <malloc.h>
 #include <sstream>
 
-systemXMLInformation systemXMLHashInformation[] = {
-        {WII_U_MENU_JAP,    0x0005001010040000L, "2645065A42D18D390C78543E3C4FE7E1D1957A63", "5E5C707E6DAF82393E93971BE98BE3B12204932A"},
-        {WII_U_MENU_USA,    0x0005001010040100L, "124562D41A02C7112DDD5F9A8F0EE5DF97E23471", "DC0F9941E99C629625419F444B5A5B177A67309F"},
-        {WII_U_MENU_EUR,    0x0005001010040200L, "F06041A4E5B3F899E748F1BAEB524DE058809F1D", "A0273C466DE15F33EC161BCD908B5BFE359FE6E0"},
-        {HEALTH_SAFETY_JAP, 0x000500101004E000L, "066D672824128713F0A7D156142A68B998080148", "2849DE91560F6667FE7415F89FC916BE3A27DE75"},
-        {HEALTH_SAFETY_USA, 0x000500101004E100L, "0EBCA1DFC0AB7A6A7FE8FB5EAF23179621B726A1", "83CF5B1CE0B64C51D15B1EFCAD659063790EB590"},
-        {HEALTH_SAFETY_EUR, 0x000500101004E200L, "DE46EC3E9B823ABA6CB0638D0C4CDEEF9C793BDD", "ED59630448EC6946F3E51618DA3681EC3A84D391"}
-};
-
-appInformation supportedApps[] = {
-        {0x000500101004E000L, "Health and Safety Information [JPN]", false, {'\0'}, "9D34DDD91604D781FDB0727AC75021833304964C", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03"},
-        {0x000500101004E100L, "Health and Safety Information [USA]", false, {'\0'}, "045734666A36C7EF0258A740855886EBDB20D59B", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03"},
-        {0x000500101004E200L, "Health and Safety Information [EUR]", false, {'\0'}, "130A76F8B36B36D43B88BBC74393D9AFD9CFD2A4", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03"},
-};
-
 InstallerService::eResults InstallerService::checkCOS(const std::string &path, char *hash) {
     std::string cosFilePath = path + "/code/cos.xml";
     DEBUG_FUNCTION_LINE("Loading %s", cosFilePath.c_str());
@@ -61,8 +46,7 @@ InstallerService::eResults InstallerService::checkSystemXML(const std::string &p
     std::string inputFile = std::string(path + "/system.xml");
 
     systemXMLInformation *data = nullptr;
-    int arrayLength = (sizeof(systemXMLHashInformation) / sizeof(*systemXMLHashInformation));
-    for (int i = 0; i < arrayLength; i++) {
+    for (int i = 0; systemXMLHashInformation[i].titleId != 0; i++) {
         if (systemXMLHashInformation[i].titleId == titleId) {
             data = &systemXMLHashInformation[i];
             break;
@@ -76,7 +60,6 @@ InstallerService::eResults InstallerService::checkSystemXML(const std::string &p
 
     DEBUG_FUNCTION_LINE("Setting coldboot to %016llX", data->titleId);
 
-
     pugi::xml_document doc;
     pugi::xml_parse_result resultSystem = doc.load_file(inputFile.c_str());
 
@@ -89,13 +72,22 @@ InstallerService::eResults InstallerService::checkSystemXML(const std::string &p
     snprintf(tmp, 17, "%016llX", data->titleId);
 
     doc.child("system").child("default_title_id").first_child().set_value(tmp);
+    if (!doc.child("system").child("log").attribute("length")) {
+        doc.child("system").child("log").append_attribute("length") = "0";
+    }
+    if (!doc.child("system").child("standby").attribute("length")) {
+        doc.child("system").child("standby").append_attribute("length") = "0";
+    }
+    if (!doc.child("system").child("ramdisk").attribute("length")) {
+        doc.child("system").child("ramdisk").append_attribute("length") = "0";
+    }
 
     std::stringstream ss;
     doc.save(ss, "  ", pugi::format_default, pugi::encoding_utf8);
 
     std::string newHash = Utils::calculateSHA1(ss.str().c_str(), ss.str().size());
 
-    if (std::string(data->hash) == newHash) {
+    if (std::string(data->hash) == newHash || std::string(data->hash2) == newHash) {
         DEBUG_FUNCTION_LINE("Success! system.xml is compatible");
         return SUCCESS;
     } else {
@@ -163,9 +155,8 @@ std::optional<appInformation> InstallerService::getInstalledAppInformation() {
     DEBUG_FUNCTION_LINE("%d titles found on the WiiU", titleCount);
     bool success = false;
 
-    int arrayLength = (sizeof(supportedApps) / sizeof(*supportedApps));
     for (uint32_t i = 0; i < titleCount; ++i) {
-        for (int j = 0; j < arrayLength; ++j) {
+        for (int j = 0; supportedApps[j].titleId != 0; j++) {
             if (titleList[i].titleId == supportedApps[j].titleId) {
                 DEBUG_FUNCTION_LINE("%s is on the Wii U (%s) %d", supportedApps[j].appName, titleList[i].path, sizeof(supportedApps[j].path));
                 supportedApps[j].onTheWiiU = true;
@@ -175,11 +166,12 @@ std::optional<appInformation> InstallerService::getInstalledAppInformation() {
             }
         }
     }
+
     free(titleList);
 
     if (success) {
         success = false;
-        for (int j = 0; j < arrayLength; ++j) {
+        for (int j = 0; supportedApps[j].titleId != 0; j++) {
             if (supportedApps[j].onTheWiiU) {
                 std::string path(supportedApps[j].path);
                 if (!StringTools::replace(path, "/vol/storage_mlc01", "storage_mlc_installer:")) {
@@ -440,7 +432,6 @@ InstallerService::eResults InstallerService::patchCOS(const std::string &path, c
     return COS_XML_HASH_MISMATCH;
 }
 
-
 InstallerService::eResults InstallerService::copyRPX(const std::string &path, const uint8_t *rpx_data, size_t size, const std::string &rpx_hash) {
     std::string rpxSourceFilePath = path + "/code/safe.rpx";
     std::string rpxBackupFilePath = path + "/code/sbac.rpx";
@@ -508,8 +499,7 @@ InstallerService::eResults InstallerService::patchSystemXML(const std::string &p
     }
 
     systemXMLInformation *data = nullptr;
-    int arrayLength = (sizeof(systemXMLHashInformation) / sizeof(*systemXMLHashInformation));
-    for (int i = 0; i < arrayLength; i++) {
+    for (int i = 0; systemXMLHashInformation[i].titleId != 0; i++) {
         if (systemXMLHashInformation[i].titleId == titleId) {
             data = &systemXMLHashInformation[i];
             break;
@@ -534,6 +524,15 @@ InstallerService::eResults InstallerService::patchSystemXML(const std::string &p
     snprintf(tmp, 17, "%016llX", data->titleId);
 
     doc.child("system").child("default_title_id").first_child().set_value(tmp);
+    if (!doc.child("system").child("log").attribute("length")) {
+        doc.child("system").child("log").append_attribute("length") = "0";
+    }
+    if (!doc.child("system").child("standby").attribute("length")) {
+        doc.child("system").child("standby").append_attribute("length") = "0";
+    }
+    if (!doc.child("system").child("ramdisk").attribute("length")) {
+        doc.child("system").child("ramdisk").append_attribute("length") = "0";
+    }
     doc.save_file(finalFile.c_str(), "  ", pugi::format_default, pugi::encoding_utf8);
 
     std::string newHash = Utils::hashFile(finalFile);
@@ -559,3 +558,63 @@ InstallerService::eResults InstallerService::patchSystemXML(const std::string &p
 
     return SYSTEM_XML_HASH_MISMATCH;
 }
+
+uint64_t InstallerService::getColdbootTitleId(const std::string &path) {
+    std::string inputFile = std::string(path + "/system.xml");
+
+    pugi::xml_document doc;
+    pugi::xml_parse_result resultSystem = doc.load_file(inputFile.c_str());
+
+    if (!resultSystem) {
+        DEBUG_FUNCTION_LINE("Error while parsing %s: %s", inputFile.c_str(), resultSystem.description());
+        return SYSTEM_XML_PARSING_FAILED;
+    }
+
+    DEBUG_FUNCTION_LINE("%s", doc.child("system").child("default_title_id").first_child().value());
+
+    uint64_t result = strtoull(doc.child("system").child("default_title_id").first_child().value(), nullptr, 16);
+
+    return result;
+}
+
+InstallerService::eResults InstallerService::checkFSTAlreadyValid(const std::string &path, const std::string &hash) {
+    std::string filePath = path + "/code/title.fst";
+    return checkFileHash(filePath, hash);
+}
+
+InstallerService::eResults InstallerService::checkTMDValid(const std::string &path, const std::string &hash) {
+    std::string filePath = path + "/code/title.fst";
+    return checkFileHash(filePath, hash);
+}
+
+InstallerService::eResults InstallerService::checkCOSAlreadyValid(const std::string &path, const std::string &hash) {
+    std::string filePath = path + "/code/cos.xml";
+    return checkFileHash(filePath, hash);
+}
+
+InstallerService::eResults InstallerService::checkRPXAlreadyValid(const std::string &path, const std::string &hash) {
+    std::string filePath = path + "/code/safe.rpx";
+    return checkFileHash(filePath, hash);
+}
+
+InstallerService::eResults InstallerService::checkFileHash(const std::string &filePath, const std::string &hash) {
+    uint8_t *fileData = nullptr;
+    uint32_t fileDataSize = 0;
+
+    if (FSUtils::LoadFileToMem(filePath.c_str(), &fileData, &fileDataSize) < 0) {
+        return FAILED_TO_LOAD_FILE;
+    }
+
+    std::string newHash = Utils::calculateSHA1((const char *) fileData, fileDataSize);
+
+    free(fileData);
+    fileData = nullptr;
+
+    if (StringTools::strCompareIC(hash, newHash)) {
+        return SUCCESS;
+    } else {
+        DEBUG_FUNCTION_LINE("expected %s actual %s", hash.c_str(), newHash.c_str());
+        return FST_HASH_MISMATCH;
+    }
+}
+

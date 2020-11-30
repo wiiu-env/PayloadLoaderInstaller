@@ -1,4 +1,3 @@
-#include <coreinit/time.h>
 #include <coreinit/debug.h>
 
 #include <whb/proc.h>
@@ -12,15 +11,15 @@
 #include "WiiUScreen.h"
 #include "InstallerService.h"
 
-#include "../build/safe_payload.h"
 #include "ApplicationState.h"
 #include "VPADInput.h"
+#include "../build/safe_payload.h"
 
 constexpr bool strings_equal(char const *a, char const *b) {
     return std::string_view(a) == b;
 }
 
-static_assert(strings_equal(RPX_HASH, "2df9282cadcbe3fa86848ade9c67cbff12b72426"), "Built with an untested safe.rpx! Remove this check if you really know what you're doing.");
+static_assert(strings_equal(RPX_HASH, "116cff322148216f38b1eaaf296d1cffc6a3a98f"), "Built with an untested root.rpx! Remove this check if you really know what you're doing.");
 
 void initIOSUHax();
 

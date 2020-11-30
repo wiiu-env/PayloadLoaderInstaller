@@ -23,6 +23,7 @@ public:
         STATE_CHECK_PATCH_POSSIBLE,
         STATE_CHECK_PATCH_POSSIBLE_DONE,
         STATE_INSTALL_CHOOSE_COLDBOOT,
+        STATE_INSTALL_NO_COLDBOOT_ALLOWED,
         STATE_INSTALL_CONFIRM_DIALOG,
         STATE_INSTALL_STARTED,
         STATE_INSTALL_FST,
@@ -70,4 +71,10 @@ private:
 
     eGameState state;
     eErrorState error = ERROR_NONE;
+    uint64_t coldbootTitleId;
+    _gList_t *coldbootTitle;
+    bool fstAlreadyPatched;
+    bool rpxAlreadyPatched;
+    bool cosAlreadyPatched;
+    bool tmdValid;
 };
