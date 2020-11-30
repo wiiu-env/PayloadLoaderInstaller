@@ -162,7 +162,7 @@ bool FSUtils::copyFile(const std::string &in, const std::string &out) {
     return true;
 }
 
-int32_t FSUtils::saveBufferToFile(const char *path, void *buffer, uint32_t size) {
+int32_t FSUtils::saveBufferToFile(const char *path, const void *buffer, uint32_t size) {
     CFile file(path, CFile::WriteOnly);
     if (!file.isOpen()) {
         return -1;

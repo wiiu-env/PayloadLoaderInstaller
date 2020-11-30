@@ -13,5 +13,5 @@ public:
 
     static bool copyFile(const std::string &in, const std::string &out);
 
-    static int32_t saveBufferToFile(const char *path, void *buffer, uint32_t size);
+    static int32_t saveBufferToFile(const char *path, const void *buffer, uint32_t size);
 };
