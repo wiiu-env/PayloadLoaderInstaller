@@ -43,6 +43,10 @@ public:
         return false;
     }
 
+    static bool isBackupAvailable(const std::string &path);
+
+    static eResults restoreAppFiles(const std::string &path);
+
     static eResults backupAppFiles(const std::string &path);
 
     static eResults patchCOS(const std::string &path, char *hash);
@@ -54,6 +58,8 @@ public:
     static eResults checkFST(const std::string &path, const char *fstHash);
 
     static std::optional<appInformation> getInstalledAppInformation();
+
+    static std::optional<uint64_t> getSystemMenuTitleId();
 
     static std::string ErrorMessage(eResults error);
 

@@ -21,7 +21,8 @@ public:
         STATE_WELCOME_SCREEN,
         STATE_GET_APP_INFORMATION,
         STATE_CHECK_PATCH_POSSIBLE,
-        STATE_CHECK_PATCH_POSSIBLE_DONE,
+        STATE_CHECK_REMOVAL_POSSIBLE,
+        STATE_INSTALL_MENU,
         STATE_INSTALL_CHOOSE_COLDBOOT,
         STATE_INSTALL_NO_COLDBOOT_ALLOWED,
         STATE_INSTALL_CONFIRM_DIALOG,
@@ -31,7 +32,12 @@ public:
         STATE_INSTALL_COS,
         STATE_INSTALL_RPX,
         STATE_INSTALL_SYSTEM_XML,
-        STATE_INSTALL_SUCCESS
+        STATE_INSTALL_SUCCESS,
+        STATE_REMOVE_CONFIRM_DIALOG,
+        STATE_REMOVE_STARTED,
+        STATE_REMOVE_COLDBOOT,
+        STATE_REMOVE_AROMA,
+        STATE_REMOVE_SUCCESS
     };
 
     ApplicationState();
@@ -43,6 +49,8 @@ public:
     void update(Input *input);
 
     void checkPatchPossible();
+
+    void checkRemovalPossible();
 
     void getAppInformation();
 
@@ -69,11 +77,13 @@ private:
     bool fstPatchPossible = false;
     bool cosPatchPossible = false;
     bool systemXMLPatchPossible = false;
+    bool removalPossible = false;
 
     eGameState state;
     eErrorState error = ERROR_NONE;
     uint64_t coldbootTitleId;
     _gList_t *coldbootTitle;
+    std::optional<uint64_t> systemMenuTitleId;
     bool fstAlreadyPatched;
     bool rpxAlreadyPatched;
     bool cosAlreadyPatched;

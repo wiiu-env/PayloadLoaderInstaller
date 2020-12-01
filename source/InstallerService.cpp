@@ -186,6 +186,35 @@ std::optional<appInformation> InstallerService::getInstalledAppInformation() {
     return {};
 }
 
+std::optional<uint64_t> InstallerService::getSystemMenuTitleId() {
+    auto mcpHandle = (int32_t) MCP_Open();
+    auto titleCount = (uint32_t) 1;
+    auto *titleList = (MCPTitleListType *) memalign(32, sizeof(MCPTitleListType) * titleCount);
+
+    MCP_TitleListByAppType(mcpHandle, MCP_APP_TYPE_SYSTEM_MENU, &titleCount, titleList, sizeof(MCPTitleListType) * titleCount);
+
+    MCP_Close(mcpHandle);
+
+    if (titleCount != 1) {
+        DEBUG_FUNCTION_LINE("More than 1 System Menu title!? Found %d", titleCount);
+        return {};
+    }
+
+    if ((titleList->titleId != 0x0005001010040000L) &&
+        (titleList->titleId != 0x0005001010040100L) &&
+        (titleList->titleId != 0x0005001010040200L))
+    {
+        DEBUG_FUNCTION_LINE("Unrecognized System Menu title");
+        return {};
+    }
+
+    uint64_t menuTid = titleList->titleId;
+
+    free(titleList);
+
+    return menuTid;
+}
+
 InstallerService::eResults InstallerService::patchFSTData(uint8_t *fstData, uint32_t size) {
     auto *fstHeader = (FSTHeader *) fstData;
     if (strncmp(FSTHEADER_MAGIC, fstHeader->magic, 3) != 0) {
@@ -315,6 +344,77 @@ std::string InstallerService::ErrorMessage(InstallerService::eResults error) {
         return "UNKNOWN ERROR";
     }
 
+}
+
+bool InstallerService::isBackupAvailable(const std::string &path) {
+    std::string backupList[] = {
+        {"/content/title.fst.bak"},
+        {"/content/cos.xml.bak"  },
+        {"/content/safe.rpx.bak" },
+    };
+
+    for (auto &backupEntry : backupList) {
+        std::string backupFile = path + backupEntry;
+        std::string backupSha1 = backupFile + ".sha1";
+
+        if (!FSUtils::CheckFile(backupFile.c_str())) {
+            return false;
+        }
+
+        if (!FSUtils::CheckFile(backupSha1.c_str())) {
+            continue;
+        }
+
+        uint8_t *sha1FileCont;
+        uint32_t sha1FileSize;
+        FSUtils::LoadFileToMem(backupSha1.c_str(), &sha1FileCont, &sha1FileSize);
+        if (!sha1FileCont) {
+            return false;
+        }
+
+        std::string savedHash = std::string(sha1FileCont, sha1FileCont + sha1FileSize);
+        std::string fileHash = Utils::hashFile(backupFile);
+        if (fileHash != savedHash) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+InstallerService::eResults InstallerService::restoreAppFiles(const std::string &path) {
+    std::string backupList[][2] = {
+        {"/code/title.fst", "/content/title.fst.bak"},
+        {"/code/cos.xml",   "/content/cos.xml.bak"  },
+        {"/code/safe.rpx",  "/content/safe.rpx.bak" },
+    };
+
+    for (auto &backupOp : backupList) {
+        std::string destPath = path + backupOp[0];
+        std::string backupPath = path + backupOp[1];
+
+        if (!FSUtils::copyFile(backupPath, destPath)) {
+            DEBUG_FUNCTION_LINE("Failed to copy files");
+            return FAILED_TO_COPY_FILES;
+        }
+
+        std::string srcHash = Utils::hashFile(backupPath);
+        std::string dstHash = Utils::hashFile(destPath);
+        if (srcHash != dstHash) {
+            DEBUG_FUNCTION_LINE("Hashes do not match. %s %s", srcHash.c_str(), dstHash.c_str());
+            return FAILED_TO_CHECK_HASH_COPIED_FILES;
+        }
+    }
+
+    for (auto &backupOp : backupList) {
+        std::string backupPath = path + backupOp[1];
+        std::string backupSha1Path = backupPath + ".sha1";
+        ::remove(backupPath.c_str());
+        ::remove(backupSha1Path.c_str());
+    }
+
+    DEBUG_FUNCTION_LINE("Successfully restored app files");
+    return SUCCESS;
 }
 
 InstallerService::eResults InstallerService::backupAppFiles(const std::string &path) {
