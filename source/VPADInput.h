@@ -23,7 +23,6 @@ class VPadInput : public Input {
 public:
     //!Constructor
     VPadInput() {
-        memset(&vpad, 0, sizeof(vpad));
     }
 
     //!Destructor
