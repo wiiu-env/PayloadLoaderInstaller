@@ -48,6 +48,11 @@ void ApplicationState::changeState(eGameState newState) {
                 menu.addText("[   ] " + name + "can NOT be patched!");
             }
         };
+        if (this->tmdValid) {
+            menu.addText("[ X ] title.tmd is valid!");
+        } else {
+            menu.addText("[   ] title.tmd is NOT valid!");
+        }
         showCheckResult("title.fst", this->fstPatchPossible, this->fstAlreadyPatched);
         showCheckResult("cos.xml", this->cosPatchPossible, this->cosAlreadyPatched);
         showCheckResult("safe.rpx", true, this->rpxAlreadyPatched);
@@ -279,7 +284,7 @@ void ApplicationState::checkPatchPossible() {
         DEBUG_FUNCTION_LINE("ERROR: %s", InstallerService::ErrorMessage(result).c_str());
     }
 
-    this->installPossible = this->fstPatchPossible && this->cosPatchPossible;
+    this->installPossible = this->fstPatchPossible && this->cosPatchPossible && this->tmdValid;
     this->alreadyInstalled = this->fstAlreadyPatched && this->rpxAlreadyPatched && this->cosAlreadyPatched;
 
     changeState(STATE_CHECK_COLDBOOT_STATUS);
