@@ -13,6 +13,7 @@
 
 #include "ApplicationState.h"
 #include "VPADInput.h"
+#include "WPADInput.h"
 #include "../build/safe_payload.h"
 
 constexpr bool strings_equal(char const *a, char const *b) {
@@ -31,7 +32,13 @@ bool sIosuhaxMount = false;
 int main_loop() {
     DEBUG_FUNCTION_LINE("Creating state");
     ApplicationState state;
-    VPadInput input;
+    VPadInput vpadInput;
+    WPADInput wpadInputs[4] = {
+        WPAD_CHAN_0,
+        WPAD_CHAN_1,
+        WPAD_CHAN_2,
+        WPAD_CHAN_3
+    };
 
     if (sFSAFd < 0 || !sIosuhaxMount) {
         state.setError(ApplicationState::eErrorState::ERROR_IOSUHAX_FAILED);
@@ -39,8 +46,12 @@ int main_loop() {
 
     DEBUG_FUNCTION_LINE("Entering main loop");
     while (WHBProcIsRunning()) {
-        input.update(1280, 720);
-        state.update(&input);
+        vpadInput.update(1280, 720);
+        state.update(&vpadInput);
+        for (int i = 0; i < 4; i++) {
+            wpadInputs[i].update(1280, 720);
+            state.update(&wpadInputs[i]);
+        }
         state.render();
     }
 
@@ -55,7 +66,11 @@ int main(int argc, char **argv) {
 
     initIOSUHax();
 
+    WPADInput::init();
+
     main_loop();
+
+    WPADInput::close();
 
     deInitIOSUHax();
 
