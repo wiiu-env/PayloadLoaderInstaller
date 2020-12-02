@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <malloc.h>
 #include <sstream>
+#include <iosuhax.h>
 
 InstallerService::eResults InstallerService::checkCOS(const std::string &path, char *hash) {
     std::string cosFilePath = path + "/code/cos.xml";
@@ -754,5 +755,32 @@ InstallerService::eResults InstallerService::checkFileHash(const std::string &fi
         DEBUG_FUNCTION_LINE("expected %s actual %s", hash.c_str(), newHash.c_str());
         return FST_HASH_MISMATCH;
     }
+}
+
+InstallerService::eResults InstallerService::setBootTitle(uint64_t titleId) {
+    InstallerService::eResults result;
+
+    if ((result = checkSystemXML("storage_slc_installer:/config", titleId)) != SUCCESS) {
+        return result;
+    }
+
+    if ((result = patchSystemXML("storage_slc_installer:/config", titleId)) != SUCCESS) {
+        return result;
+    }
+
+    auto fsaFd = IOSUHAX_FSA_Open();
+    if (fsaFd >= 0) {
+        if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/storage_mlc01") == 0) {
+            DEBUG_FUNCTION_LINE("Flushed mlc");
+        }
+        if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/system") == 0) {
+            DEBUG_FUNCTION_LINE("Flushed slc");
+        }
+        IOSUHAX_FSA_Close(fsaFd);
+    } else {
+        DEBUG_FUNCTION_LINE("Failed to open fsa");
+    }
+
+    return SUCCESS;
 }
 

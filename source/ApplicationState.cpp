@@ -1,414 +1,265 @@
 #include "ApplicationState.h"
 #include "WiiUScreen.h"
 #include "ScreenUtils.h"
+#include "StringTools.h"
 #include "../build/safe_payload.h"
 #include <sysapp/launch.h>
 #include <iosuhax.h>
 
 extern "C" void OSShutdown();
 
-void ApplicationState::render() {
-    WiiUScreen::clearScreen();
-    WiiUScreen::drawLine("Aroma Installer");
-    WiiUScreen::drawLine("==================");
-    WiiUScreen::drawLine("");
+void ApplicationState::changeState(eGameState newState) {
+    this->state = newState;
 
+    menu.clear();
     if (this->state == STATE_ERROR) {
-        WiiUScreen::drawLine("The installation failed:");
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLinef("Error:       %s", ErrorMessage().c_str());
-        WiiUScreen::drawLinef("Description: %s", ErrorDescription().c_str());
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine("Press A to return to the Wii U Menu.");
+        menu.addText("The installation failed:");
+        menu.addText();
+        menu.addText("Error:       " + ErrorMessage());
+        menu.addText("Description: " + ErrorDescription());
+        menu.addText();
+        menu.addText();
+        menu.addOption("Press A to return to the Wii U Menu.", STATE_EXIT_SYSMENU);
     } else if (this->state == STATE_WELCOME_SCREEN) {
-        WiiUScreen::drawLine("Welcome to the Aroma Installer!");
-        WiiUScreen::drawLine("Do you want to check if an installation is possible?");
-        WiiUScreen::drawLine("");
-        if (this->selectedOption == 0) {
-            WiiUScreen::drawLine("> Check             Exit");
-        } else if (this->selectedOption == 1) {
-            WiiUScreen::drawLine("  Check           > Exit");
-        }
+        menu.addText("Welcome to the Aroma Installer!");
+        menu.addText("Do you want to check if an installation is possible?");
+        menu.addText();
+        menu.addOption("Check", STATE_GET_APP_INFORMATION);
+        menu.addOption("Exit", STATE_EXIT_SYSMENU);
     } else if (this->state == STATE_GET_APP_INFORMATION) {
-        WiiUScreen::drawLine("Getting app information");
+        menu.addText("Getting app information");
     } else if (this->state == STATE_CHECK_PATCH_POSSIBLE) {
-        WiiUScreen::drawLine("Check if console can be patched.");
+        menu.addText("Check if console can be patched.");
+    } else if (this->state == STATE_CHECK_COLDBOOT_STATUS) {
+        menu.addText("Check if coldboot can be enabled.");
     } else if (this->state == STATE_CHECK_REMOVAL_POSSIBLE) {
-        WiiUScreen::drawLine("Check if Aroma can be removed.");
-    } else if (this->state == STATE_INSTALL_MENU) {
-        WiiUScreen::drawLinef("Compatible title:");
-        WiiUScreen::drawLinef("%s", appInfo->appName);
-        WiiUScreen::drawLine();
-
-        if (this->fstAlreadyPatched) {
-            WiiUScreen::drawLine("[ X ] title.fst is already patched!");
-        } else if (this->fstPatchPossible) {
-            WiiUScreen::drawLine("[ X ] title.fst can be patched!");
-        } else {
-            WiiUScreen::drawLine("[   ] title.fst can NOT be patched!");
-        }
-        if (this->cosAlreadyPatched) {
-            WiiUScreen::drawLine("[ X ] cos.xml is already patched!");
-        } else if (this->cosPatchPossible) {
-            WiiUScreen::drawLine("[ X ] cos.xml can be patched!");
-        } else {
-            WiiUScreen::drawLine("[   ] cos.xml can NOT be patched!");
-        }
-        if (this->rpxAlreadyPatched) {
-            WiiUScreen::drawLine("[ X ] safe.rpx is already patched!");
-        } else {
-            WiiUScreen::drawLine("[ X ] safe.rpx can to be patched!");
-        }
-
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLinef("System is booting into: ");
-        if (this->coldbootTitle == nullptr) {
-            WiiUScreen::drawLinef("%ll016X (Unknown title)", this->coldbootTitleId);
-        } else {
-            WiiUScreen::drawLinef("%ll016X (%s)", this->coldbootTitle->tid, this->coldbootTitle->name);
-        }
-
-        WiiUScreen::drawLine();
-
-        if (!this->fstPatchPossible || !this->cosPatchPossible) {
-            WiiUScreen::drawLine("A safe installation of Aroma can not be provided.");
-            WiiUScreen::drawLine();
-            WiiUScreen::drawLine("Press A to return to the Wii U Menu");
-        } else {
-            std::string options = "";
-            WiiUScreen::drawLine("Do you want to install Aroma?");
-            WiiUScreen::drawLine("");
-
-            if (this->removalPossible) {
-                if (this->selectedOption == 0) {
-                    WiiUScreen::drawLine("> Exit             Install             Remove");
-                } else if (this->selectedOption == 1) {
-                    WiiUScreen::drawLine("  Exit           > Install             Remove");
-                } else if (this->selectedOption == 2) {
-                    WiiUScreen::drawLine("  Exit             Install           > Remove");
-                }
+        menu.addText("Check if Aroma can be removed.");
+    } else if (this->state == STATE_APP_INCOMPATIBLE) {
+        menu.addText("Sorry, Aroma cannot be safely installed to:");
+        menu.addText(std::string(appInfo->appName));
+        menu.addText();
+        menu.addText("Additional informations:");
+        auto showCheckResult = [&] (const std::string &name, bool canPatch, bool patched) {
+            if (patched) {
+                menu.addText("[ X ] " + name + "is already patched!");
+            } else if (canPatch) {
+                menu.addText("[ X ] " + name + "can be patched!");
             } else {
-                if (this->selectedOption == 0) {
-                    WiiUScreen::drawLine("> Exit             Install");
-                } else if (this->selectedOption == 1) {
-                    WiiUScreen::drawLine("  Exit           > Install");
-                }
+                menu.addText("[   ] " + name + "can NOT be patched!");
             }
+        };
+        showCheckResult("title.fst", this->fstPatchPossible, this->fstAlreadyPatched);
+        showCheckResult("cos.xml", this->cosPatchPossible, this->cosAlreadyPatched);
+        showCheckResult("safe.rpx", true, this->rpxAlreadyPatched);
+        menu.addText();
+        menu.addOption("Exit", STATE_EXIT_SYSMENU);
+    } else if (this->state == STATE_MAIN_MENU) {
+        menu.addText("Aroma " + std::string(alreadyInstalled ? "is" : "can be") + " installed to:");
+        menu.addText(std::string(appInfo->appName));
+        menu.addText();
+        menu.addOption("Install", STATE_INSTALL_CONFIRM_DIALOG);
+        menu.addOption("Boot options", STATE_BOOT_MENU);
+        if (this->removalPossible) {
+            menu.addOption("Remove", STATE_REMOVE_CONFIRM_DIALOG);
         }
-    } else if (this->state == STATE_INSTALL_CHOOSE_COLDBOOT) {
-        WiiUScreen::drawLine("Select your installation type:");
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine("[Coldboot] Aroma will launch directly after booting the console.");
-        WiiUScreen::drawLine("[No Coldboot] Aroma will need to be launched manually.");
-        WiiUScreen::drawLine("");
-        if (this->selectedOption == 0) {
-            WiiUScreen::drawLine("> Back               Coldboot                   No Coldboot");
-        } else if (this->selectedOption == 1) {
-            WiiUScreen::drawLine("  Back             > Coldboot                   No Coldboot");
-        } else if (this->selectedOption == 2) {
-            WiiUScreen::drawLine("  Back               Coldboot                 > No Coldboot");
-        }
-    } else if (this->state == STATE_INSTALL_NO_COLDBOOT_ALLOWED) {
-        WiiUScreen::drawLine("Note: To install Aroma as coldboot you need to run this installer");
-        WiiUScreen::drawLine("from an already running Aroma instance (and not the browser)");
-        WiiUScreen::drawLine("After the installation has finished, reboot the console, open the");
-        WiiUScreen::drawLine("Health & Safety app and run the Aroma installer.");
-        WiiUScreen::drawLine();
-        if (this->selectedOption == 0) {
-            WiiUScreen::drawLine("> Back               Install without Coldboot");
-        } else if (this->selectedOption == 1) {
-            WiiUScreen::drawLine("  Back             > Install without Coldboot");
-        }
+        menu.addOption("Exit", STATE_EXIT_SYSMENU);
     } else if (this->state == STATE_INSTALL_CONFIRM_DIALOG) {
-        WiiUScreen::drawLine("Are you REALLY sure you want to install Aroma?");
-        WiiUScreen::drawLine("Installing could permanently damage your console");
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine("After the installation you can NOT longer use:");
-        WiiUScreen::drawLinef("- %s", appInfo->appName);
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine("Selected installation type:");
-        if (this->installColdboot) {
-            WiiUScreen::drawLine("- Coldboot");
-        } else {
-            WiiUScreen::drawLine("- No Coldboot");
-        }
-
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine();
-        if (this->selectedOption == 0) {
-            WiiUScreen::drawLine("> Back               Install");
-        } else if (this->selectedOption == 1) {
-            WiiUScreen::drawLine("  Back             > Install");
-        }
+        menu.addText("Are you REALLY sure you want to install Aroma?");
+        menu.addText("Installing could permanently damage your console");
+        menu.addText();
+        menu.addText("After the installation you can NO longer use:");
+        menu.addText("- " + std::string(appInfo->appName));
+        menu.addText();
+        menu.addOption("Back", STATE_MAIN_MENU);
+        menu.addOption("Install", STATE_INSTALL_STARTED);
     } else if (this->state == STATE_INSTALL_STARTED) {
-        WiiUScreen::drawLine("Installing...");
-    } else if (this->state == STATE_INSTALL_BACKUP) {
-        WiiUScreen::drawLine("... backing up files");
+        menu.addText("Installing...");
     } else if (this->state == STATE_INSTALL_FST) {
-        WiiUScreen::drawLine("... patching title.fst");
+        menu.addText("... patching title.fst");
     } else if (this->state == STATE_INSTALL_COS) {
-        WiiUScreen::drawLine("... patching cos.xml");
-    } else if (this->state == STATE_INSTALL_SYSTEM_XML) {
-        WiiUScreen::drawLine("... patching system.xml");
+        menu.addText("... patching cos.xml");
     } else if (this->state == STATE_INSTALL_RPX) {
-        WiiUScreen::drawLine("... install safe.rpx");
+        menu.addText("... install safe.rpx");
     } else if (this->state == STATE_INSTALL_SUCCESS) {
-        WiiUScreen::drawLine("Aroma was successfully installed");
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine("Press A to shutdown the console");
+        menu.addText("Aroma was successfully installed");
+        menu.addText();
+        menu.addOption("Press A to shutdown the console", STATE_EXIT_SHUTDOWN);
     } else if (this->state == STATE_REMOVE_CONFIRM_DIALOG) {
-        WiiUScreen::drawLine("Are you REALLY sure you want to remove Aroma?");
-        WiiUScreen::drawLine("If you have installed unsigned system");
-        WiiUScreen::drawLine("applications or modified system files");
-        WiiUScreen::drawLine("this could make your console unusable");
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine();
-        if (this->selectedOption == 0) {
-            WiiUScreen::drawLine("> Back               Remove");
-        } else if (this->selectedOption == 1) {
-            WiiUScreen::drawLine("  Back             > Remove");
-        }
+        menu.addText("Are you REALLY sure you want to remove Aroma?");
+        menu.addText("If you have modified some system apps such as the");
+        menu.addText("system menu this could make your console unusable");
+        menu.addText();
+        menu.addOption("Back", STATE_MAIN_MENU);
+        menu.addOption("Remove", STATE_REMOVE_STARTED);
     } else if (this->state == STATE_REMOVE_STARTED) {
-        WiiUScreen::drawLine("Removing...");
+        menu.addText("Removing...");
     } else if (this->state == STATE_REMOVE_COLDBOOT) {
-        WiiUScreen::drawLine("... remove system.xml coldboot patches");
+        menu.addText("... remove system.xml coldboot patches");
     } else if (this->state == STATE_REMOVE_AROMA) {
-        WiiUScreen::drawLine("... remove Aroma application patches");
+        menu.addText("... remove Aroma application patches");
     } else if (this->state == STATE_REMOVE_SUCCESS) {
-        WiiUScreen::drawLine("Aroma was successfully removed");
-        WiiUScreen::drawLine();
-        WiiUScreen::drawLine("Press A to shutdown the console");
+        menu.addText("Aroma was successfully removed");
+        menu.addText();
+        menu.addOption("Press A to shutdown the console", STATE_EXIT_SHUTDOWN);
+    } else if (this->state == STATE_BOOT_MENU) {
+        menu.addText("System is currently booting into: ");
+        std::string titleId = StringTools::strfmt("%ll016X", this->coldbootTitleId);
+        std::string titleName = this->coldbootTitle ?
+            std::string(this->coldbootTitle->name) : "Unknown title";
+        menu.addText(titleId + " (" + titleName + ")");
+        menu.addText();
+
+        if (this->systemXMLRestorePossible && this->systemXMLAlreadyPatched) {
+            menu.addOption("Switch back to System Menu", STATE_BOOT_SWITCH_SYSMENU);
+        } else if (this->systemXMLPatchAllowed) {
+            menu.addOption("Switch to Aroma", STATE_BOOT_SWITCH_AROMA);
+        } else if (this->systemXMLPatchPossible) {
+            menu.addText("To change the system boot title to Aroma, you need to");
+            menu.addText("launch this installer from an already running Aroma");
+            menu.addText("instance, in order to verify that the installation");
+            menu.addText("is working properly.");
+            menu.addText();
+            menu.addText("After installing Aroma, reboot the console, open the");
+            menu.addText("Health & Safety app and relaunch the Aroma installer.");
+            menu.addText();
+        } else {
+            menu.addText("Sorry, your system.xml file has not yet been tested");
+            menu.addText("with this tool. Boot options cannot be modified.");
+            menu.addText();
+        }
+        menu.addOption("Back", STATE_MAIN_MENU);
+    } else if (this->state == STATE_BOOT_SWITCH_AROMA) {
+        menu.addText("Changing system.xml to boot " + std::string(this->appInfo->appName) + " ...");
+    } else if (this->state == STATE_BOOT_SWITCH_SYSMENU) {
+        menu.addText("Changing system.xml to boot System Menu ...");
+    } else if (this->state == STATE_BOOT_SWITCH_SUCCESS) {
+        menu.addText("Boot title successfully updated!");
+        menu.addText();
+        menu.addOption("Press A to shutdown the console", STATE_EXIT_SHUTDOWN);
     }
-    printFooter();
-    WiiUScreen::flipBuffers();
+
+    this->state = newState;
+}
+
+void ApplicationState::render() {
+    menu.render();
 }
 
 void ApplicationState::update(Input *input) {
     if (this->state == STATE_ERROR) {
         OSEnableHomeButtonMenu(true);
-        if (entrySelected(input)) {
-            SYSLaunchMenu();
-        }
-    } else if (this->state == STATE_WELCOME_SCREEN) {
-        proccessMenuNavigation(input, 2);
-        if (entrySelected(input)) {
-            if (this->selectedOption == 0) {
-                this->state = STATE_GET_APP_INFORMATION;
-            } else {
-                SYSLaunchMenu();
-            }
-            this->selectedOption = 0;
-            return;
-        }
     } else if (this->state == STATE_GET_APP_INFORMATION) {
         getAppInformation();
     } else if (this->state == STATE_CHECK_PATCH_POSSIBLE) {
         checkPatchPossible();
+    } else if (this->state == STATE_CHECK_COLDBOOT_STATUS) {
+        checkColdbootStatus();
     } else if (this->state == STATE_CHECK_REMOVAL_POSSIBLE) {
         checkRemovalPossible();
-    } else if (this->state == STATE_INSTALL_MENU) {
-        if (this->fstPatchPossible && this->cosPatchPossible) {
-            proccessMenuNavigation(input, 2 + (this->removalPossible ? 1 : 0));
-            if (entrySelected(input)) {
-                if (this->selectedOption == 1) {
-                    if (systemXMLPatchPossible) {
-                        this->state = STATE_INSTALL_CHOOSE_COLDBOOT;
-                        this->installColdboot = false;
-                    } else {
-                        this->state = STATE_INSTALL_CONFIRM_DIALOG;
-                    }
-                } else if ((this->selectedOption == 2) && this->removalPossible) {
-                    this->state = STATE_REMOVE_CONFIRM_DIALOG;
-                } else {
-                    SYSLaunchMenu();
-                }
-                this->selectedOption = 0;
-                return;
-            }
+    } else if (this->state == STATE_COMPATIBILITY_RESULTS) {
+        if (this->installPossible) {
+            changeState(STATE_MAIN_MENU);
         } else {
-            if (entrySelected(input)) {
-                SYSLaunchMenu();
-            }
-        }
-    } else if (this->state == STATE_INSTALL_CHOOSE_COLDBOOT) {
-
-        if (!InstallerService::isColdBootAllowed()) {
-            this->installColdboot = false;
-            this->state = STATE_INSTALL_NO_COLDBOOT_ALLOWED;
-            return;
-        }
-
-        proccessMenuNavigation(input, 3);
-        if (entrySelected(input)) {
-            if (this->selectedOption == 0) { // Back
-                this->state = STATE_INSTALL_MENU;
-            } else {
-                if (selectedOption == 1) { // Install with coldboot
-                    this->installColdboot = true;
-                }
-                this->state = STATE_INSTALL_CONFIRM_DIALOG;
-            }
-            this->selectedOption = 0;
-            return;
-        }
-    } else if (this->state == STATE_INSTALL_NO_COLDBOOT_ALLOWED) {
-        proccessMenuNavigation(input, 2);
-        if (entrySelected(input)) {
-            if (this->selectedOption == 0) {
-                this->state = STATE_INSTALL_MENU;
-            } else {
-                this->state = STATE_INSTALL_CONFIRM_DIALOG;
-            }
-            this->selectedOption = 0;
-        }
-    } else if (this->state == STATE_INSTALL_CONFIRM_DIALOG) {
-        proccessMenuNavigation(input, 2);
-        if (entrySelected(input)) {
-            if (this->selectedOption == 0) {
-                this->state = STATE_INSTALL_MENU;
-            } else {
-                this->state = STATE_INSTALL_STARTED;
-                OSEnableHomeButtonMenu(false);
-            }
-            this->selectedOption = 0;
-            return;
+            changeState(STATE_APP_INCOMPATIBLE);
         }
     } else if (this->state == STATE_INSTALL_STARTED) {
-        this->state = STATE_INSTALL_BACKUP;
+        OSEnableHomeButtonMenu(false);
+        changeState(STATE_INSTALL_BACKUP);
     } else if (this->state == STATE_INSTALL_BACKUP) {
         auto result = InstallerService::backupAppFiles(this->appInfo->path);
         if (result != InstallerService::SUCCESS) {
-            setError(ERROR_INSTALLER_ERROR);
             this->installerError = result;
+            setError(ERROR_INSTALLER_ERROR);
         } else {
-            this->state = STATE_INSTALL_FST;
+            changeState(STATE_INSTALL_FST);
         }
     } else if (this->state == STATE_INSTALL_FST) {
-        auto result = InstallerService::patchFST(this->appInfo->path, this->appInfo->fstHash);
+        auto result = (this->fstAlreadyPatched) ? InstallerService::SUCCESS :
+            InstallerService::patchFST(this->appInfo->path, this->appInfo->fstHash);
         if (result != InstallerService::SUCCESS) {
-            setError(ERROR_INSTALLER_ERROR);
             this->installerError = result;
+            setError(ERROR_INSTALLER_ERROR);
         } else {
-            this->state = STATE_INSTALL_COS;
+            changeState(STATE_INSTALL_COS);
         }
     } else if (this->state == STATE_INSTALL_COS) {
-        auto result = InstallerService::patchCOS(this->appInfo->path, this->appInfo->cosHash);
+        auto result = (this->cosAlreadyPatched) ? InstallerService::SUCCESS :
+            InstallerService::patchCOS(this->appInfo->path, this->appInfo->cosHash);
         if (result != InstallerService::SUCCESS) {
-            setError(ERROR_INSTALLER_ERROR);
             this->installerError = result;
+            setError(ERROR_INSTALLER_ERROR);
         } else {
-            this->state = STATE_INSTALL_RPX;
+            changeState(STATE_INSTALL_RPX);
         }
     } else if (this->state == STATE_INSTALL_RPX) {
         auto result = InstallerService::copyRPX(this->appInfo->path, root_rpx, root_rpx_size, RPX_HASH);
         if (result != InstallerService::SUCCESS) {
-            setError(ERROR_INSTALLER_ERROR);
             this->installerError = result;
-        } else {
-            if (this->installColdboot) {
-                this->state = STATE_INSTALL_SYSTEM_XML;
-            } else {
-                this->state = STATE_INSTALL_SUCCESS;
-            }
-        }
-    } else if (this->state == STATE_INSTALL_SYSTEM_XML) {
-        auto result = InstallerService::patchSystemXML("storage_slc_installer:/config", this->appInfo->titleId);
-        if (result != InstallerService::SUCCESS) {
             setError(ERROR_INSTALLER_ERROR);
-            this->installerError = result;
         } else {
-            auto fsaFd = IOSUHAX_FSA_Open();
-            if (fsaFd >= 0) {
-                if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/storage_mlc01") == 0) {
-                    DEBUG_FUNCTION_LINE("Flushed mlc");
-                }
-                if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/system") == 0) {
-                    DEBUG_FUNCTION_LINE("Flushed slc");
-                }
-                IOSUHAX_FSA_Close(fsaFd);
-            } else {
-                DEBUG_FUNCTION_LINE("Failed to open fsa");
-            }
-            this->state = STATE_INSTALL_SUCCESS;
-        }
-    } else if (this->state == STATE_INSTALL_SUCCESS) {
-        if (entrySelected(input)) {
-            OSShutdown();
-        }
-    } else if (this->state == STATE_REMOVE_CONFIRM_DIALOG) {
-        proccessMenuNavigation(input, 2);
-        if (entrySelected(input)) {
-            if (this->selectedOption == 0) {
-                this->state = STATE_INSTALL_MENU;
-            } else {
-                this->state = STATE_REMOVE_STARTED;
-                OSEnableHomeButtonMenu(false);
-            }
-            this->selectedOption = 0;
-            return;
+            changeState(STATE_INSTALL_SUCCESS);
         }
     } else if (this->state == STATE_REMOVE_STARTED) {
-        this->state = STATE_REMOVE_COLDBOOT;
-    } else if (this->state == STATE_REMOVE_COLDBOOT) {
-        auto result = InstallerService::patchSystemXML("storage_slc_installer:/config", *this->systemMenuTitleId);
-        if (result != InstallerService::SUCCESS) {
-            setError(ERROR_INSTALLER_ERROR);
-            this->installerError = result;
+        OSEnableHomeButtonMenu(false);
+        if (this->systemXMLAlreadyPatched) {
+            changeState(STATE_REMOVE_COLDBOOT);
         } else {
-            auto fsaFd = IOSUHAX_FSA_Open();
-            if (fsaFd >= 0) {
-                if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/storage_mlc01") == 0) {
-                    DEBUG_FUNCTION_LINE("Flushed mlc");
-                }
-                if (IOSUHAX_FSA_FlushVolume(fsaFd, "/vol/system") == 0) {
-                    DEBUG_FUNCTION_LINE("Flushed slc");
-                }
-                IOSUHAX_FSA_Close(fsaFd);
-            } else {
-                DEBUG_FUNCTION_LINE("Failed to open fsa");
-            }
-            this->state = STATE_REMOVE_AROMA;
+            changeState(STATE_REMOVE_AROMA);
+        }
+    } else if (this->state == STATE_REMOVE_COLDBOOT) {
+        auto result = InstallerService::setBootTitle(*this->systemMenuTitleId);
+        if (result != InstallerService::SUCCESS) {
+            this->installerError = result;
+            setError(ERROR_INSTALLER_ERROR);
+        } else {
+            changeState(STATE_REMOVE_AROMA);
         }
     } else if (this->state == STATE_REMOVE_AROMA) {
         auto result = InstallerService::restoreAppFiles(this->appInfo->path);
         if (result != InstallerService::SUCCESS) {
-            setError(ERROR_INSTALLER_ERROR);
             this->installerError = result;
+            setError(ERROR_INSTALLER_ERROR);
         } else {
-            this->state = STATE_REMOVE_SUCCESS;
+            changeState(STATE_REMOVE_SUCCESS);
         }
-    } else if (this->state == STATE_REMOVE_SUCCESS) {
-        if (entrySelected(input)) {
-            OSShutdown();
+    } else if (this->state == STATE_BOOT_SWITCH_SYSMENU) {
+        OSEnableHomeButtonMenu(false);
+        auto result = InstallerService::setBootTitle(*this->systemMenuTitleId);
+        if (result != InstallerService::SUCCESS) {
+            this->installerError = result;
+            setError(ERROR_INSTALLER_ERROR);
+        } else {
+            changeState(STATE_BOOT_SWITCH_SUCCESS);
         }
+    } else if (this->state == STATE_BOOT_SWITCH_AROMA) {
+        OSEnableHomeButtonMenu(false);
+        auto result = InstallerService::setBootTitle(this->appInfo->titleId);
+        if (result != InstallerService::SUCCESS) {
+            this->installerError = result;
+            setError(ERROR_INSTALLER_ERROR);
+        } else {
+            changeState(STATE_BOOT_SWITCH_SUCCESS);
+        }
+    } else if (this->state == STATE_EXIT_SYSMENU) {
+        SYSLaunchMenu();
+    } else if (this->state == STATE_EXIT_SHUTDOWN) {
+        OSShutdown();
     }
+
+    menu.update(input);
 }
 
 ApplicationState::ApplicationState() {
-    this->state = STATE_WELCOME_SCREEN;
-    this->selectedOption = 0;
+    menu.setOptionsCallback(std::bind(&ApplicationState::changeState, this, std::placeholders::_1));
+    menu.setHeader("Aroma Installer");
+    menu.setFooter("By Maschell");
+
+    changeState(STATE_WELCOME_SCREEN);
     DEBUG_FUNCTION_LINE("State has changed to \"STATE_WELCOME_SCREEN\"");
 }
 
 void ApplicationState::checkPatchPossible() {
     DEBUG_FUNCTION_LINE("Check patch possible");
-    if (!this->appInfo) {
-        this->state = STATE_ERROR;
-        this->error = ERROR_NO_APP_INSTALLED;
-        DEBUG_FUNCTION_LINE("ERROR");
-        return;
-    }
-
-    this->coldbootTitleId = InstallerService::getColdbootTitleId("storage_slc_installer:/config");
-
-    this->coldbootTitle = nullptr;
-    for (int i = 0; GameList[i].tid != 0; i++) {
-        if (GameList[i].tid == this->coldbootTitleId) {
-            this->coldbootTitle = &GameList[i];
-            break;
-        }
-    }
 
     DEBUG_FUNCTION_LINE("CHECK FST");
 
@@ -427,28 +278,61 @@ void ApplicationState::checkPatchPossible() {
     if (result != InstallerService::SUCCESS) {
         DEBUG_FUNCTION_LINE("ERROR: %s", InstallerService::ErrorMessage(result).c_str());
     }
+
+    this->installPossible = this->fstPatchPossible && this->cosPatchPossible;
+    this->alreadyInstalled = this->fstAlreadyPatched && this->rpxAlreadyPatched && this->cosAlreadyPatched;
+
+    changeState(STATE_CHECK_COLDBOOT_STATUS);
+}
+
+void ApplicationState::checkColdbootStatus() {
+    DEBUG_FUNCTION_LINE("Check coldboot status");
+
+    this->coldbootTitleId = InstallerService::getColdbootTitleId("storage_slc_installer:/config");
+    this->coldbootTitle = nullptr;
+    for (int i = 0; GameList[i].tid != 0; i++) {
+        if (GameList[i].tid == this->coldbootTitleId) {
+            this->coldbootTitle = &GameList[i];
+            break;
+        }
+    }
+
+    InstallerService::eResults result;
+
+    this->systemMenuTitleId = InstallerService::getSystemMenuTitleId();
+
     this->systemXMLPatchPossible = ((result = InstallerService::checkSystemXML("storage_slc_installer:/config", this->appInfo->titleId)) == InstallerService::SUCCESS);
     if (result != InstallerService::SUCCESS) {
         DEBUG_FUNCTION_LINE("ERROR: %s", InstallerService::ErrorMessage(result).c_str());
     }
 
-    if (this->rpxAlreadyPatched) {
-        this->state = STATE_CHECK_REMOVAL_POSSIBLE;
+    if (this->systemMenuTitleId) {
+        this->systemXMLRestorePossible = ((result = InstallerService::checkSystemXML("storage_slc_installer:/config", *this->systemMenuTitleId)) == InstallerService::SUCCESS);
+        if (result != InstallerService::SUCCESS) {
+            DEBUG_FUNCTION_LINE("ERROR: %s", InstallerService::ErrorMessage(result).c_str());
+        }
     } else {
-        this->state = STATE_INSTALL_MENU;
+        this->systemXMLRestorePossible = false;
     }
+
+    this->systemXMLAlreadyPatched = (this->coldbootTitleId == this->appInfo->titleId);
+
+    this->systemXMLPatchAllowed = this->systemXMLPatchPossible && this->alreadyInstalled && InstallerService::isColdBootAllowed();
+
+    changeState(STATE_CHECK_REMOVAL_POSSIBLE);
 }
 
 void ApplicationState::checkRemovalPossible() {
-    this->removalPossible = false;
+    DEBUG_FUNCTION_LINE("Check removal possible");
 
-    this->systemMenuTitleId = InstallerService::getSystemMenuTitleId();
-    if (this->systemMenuTitleId) {
-        this->removalPossible = InstallerService::checkSystemXML("storage_slc_installer:/config", *this->systemMenuTitleId) == InstallerService::SUCCESS;
+    this->removalPossible = this->alreadyInstalled;
+    if (this->removalPossible) {
+        this->removalPossible &= this->systemXMLRestorePossible || !this->systemXMLAlreadyPatched;
+    }
+    if (this->removalPossible) {
         this->removalPossible &= InstallerService::isBackupAvailable(this->appInfo->path);
     }
-
-    this->state = STATE_INSTALL_MENU;
+    changeState(STATE_COMPATIBILITY_RESULTS);
 }
 
 void ApplicationState::getAppInformation() {
@@ -456,11 +340,10 @@ void ApplicationState::getAppInformation() {
     this->appInfo = InstallerService::getInstalledAppInformation();
     if (!this->appInfo) {
         DEBUG_FUNCTION_LINE("ERROR =(");
-        this->state = STATE_ERROR;
-        this->error = ERROR_NO_APP_INSTALLED;
+        setError(ERROR_NO_APP_INSTALLED);
     } else {
         DEBUG_FUNCTION_LINE("WORKED!");
-        this->state = STATE_CHECK_PATCH_POSSIBLE;
+        changeState(STATE_CHECK_PATCH_POSSIBLE);
     }
 }
 
@@ -491,33 +374,7 @@ std::string ApplicationState::ErrorDescription() {
 }
 
 void ApplicationState::setError(eErrorState err) {
-    this->state = STATE_ERROR;
     this->error = err;
     OSEnableHomeButtonMenu(true);
-}
-
-void ApplicationState::handleError() {
-
-}
-
-void ApplicationState::printFooter() {
-    ScreenUtils::printTextOnScreen(CONSOLE_SCREEN_TV, 0, 27, "By Maschell");
-    ScreenUtils::printTextOnScreen(CONSOLE_SCREEN_DRC, 0, 17, "By Maschell");
-}
-
-void ApplicationState::proccessMenuNavigation(Input *input, int maxOptionValue) {
-    if (input->data.buttons_d & Input::BUTTON_LEFT) {
-        this->selectedOption--;
-    } else if (input->data.buttons_d & Input::BUTTON_RIGHT) {
-        this->selectedOption++;
-    }
-    if (this->selectedOption < 0) {
-        this->selectedOption = maxOptionValue;
-    } else if (this->selectedOption >= maxOptionValue) {
-        this->selectedOption = 0;
-    }
-}
-
-bool ApplicationState::entrySelected(Input *input) {
-    return input->data.buttons_d & Input::BUTTON_A;
+    changeState(STATE_ERROR);
 }

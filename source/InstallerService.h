@@ -81,6 +81,8 @@ public:
 
     static eResults checkRPXAlreadyValid(const std::string &path, const std::string &hash);
 
+    static eResults setBootTitle(uint64_t titleId);
+
 private:
     static eResults patchFSTData(uint8_t *fstData, uint32_t size);
 
