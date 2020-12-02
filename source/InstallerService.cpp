@@ -722,7 +722,7 @@ InstallerService::eResults InstallerService::checkFSTAlreadyValid(const std::str
 }
 
 InstallerService::eResults InstallerService::checkTMDValid(const std::string &path, const std::string &hash) {
-    std::string filePath = path + "/code/title.fst";
+    std::string filePath = path + "/code/title.tmd";
     return checkFileHash(filePath, hash);
 }
 
