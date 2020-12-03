@@ -47,11 +47,11 @@ int main_loop() {
     DEBUG_FUNCTION_LINE("Entering main loop");
     while (WHBProcIsRunning()) {
         vpadInput.update(1280, 720);
-        state.update(&vpadInput);
         for (int i = 0; i < 4; i++) {
             wpadInputs[i].update(1280, 720);
-            state.update(&wpadInputs[i]);
+            vpadInput.combine(wpadInputs[i]);
         }
+        state.update(&vpadInput);
         state.render();
     }
 
