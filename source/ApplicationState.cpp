@@ -79,6 +79,8 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addOption("Install", STATE_INSTALL_STARTED);
     } else if (this->state == STATE_INSTALL_STARTED) {
         menu.addText("Installing...");
+    } else if (this->state == STATE_INSTALL_BACKUP) {
+        menu.addText("... backing up files");
     } else if (this->state == STATE_INSTALL_FST) {
         menu.addText("... patching title.fst");
     } else if (this->state == STATE_INSTALL_COS) {
