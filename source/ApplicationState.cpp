@@ -41,11 +41,11 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addText("Additional informations:");
         auto showCheckResult = [&] (const std::string &name, bool canPatch, bool patched) {
             if (patched) {
-                menu.addText("[ X ] " + name + "is already patched!");
+                menu.addText("[ X ] " + name + " is already patched!");
             } else if (canPatch) {
-                menu.addText("[ X ] " + name + "can be patched!");
+                menu.addText("[ X ] " + name + " can be patched!");
             } else {
-                menu.addText("[   ] " + name + "can NOT be patched!");
+                menu.addText("[   ] " + name + " can NOT be patched!");
             }
         };
         if (this->tmdValid) {
@@ -267,8 +267,6 @@ ApplicationState::ApplicationState() {
 
 void ApplicationState::checkPatchPossible() {
     DEBUG_FUNCTION_LINE("Check patch possible");
-
-    DEBUG_FUNCTION_LINE("CHECK FST");
 
     InstallerService::eResults result;
 

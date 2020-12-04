@@ -33,7 +33,7 @@ public:
         if (OSIsAddressValid(0x00FFFFF8)) {
             uint64_t bootedFrom = *((uint64_t *) 0x00FFFFF8);
             if (
-                    bootedFrom == 0x000500101004E000L || // H&S JAP
+                    bootedFrom == 0x000500101004E000L || // H&S JPN
                     bootedFrom == 0x000500101004E100L || // H&S USA
                     bootedFrom == 0x000500101004E200L    // H&S EUR
                     ) {
