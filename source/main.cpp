@@ -7,12 +7,10 @@
 #include <iosuhax.h>
 #include <iosuhax_devoptab.h>
 #include <string_view>
-#include <vector>
 #include "WiiUScreen.h"
 #include "InstallerService.h"
 
 #include "ApplicationState.h"
-#include "VPADInput.h"
 #include "WPADInput.h"
 #include "../build/safe_payload.h"
 
