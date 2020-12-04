@@ -34,6 +34,7 @@ typedef struct compatApps {
     char fstHash[41];
     char cosHash[41];
     char tmdHash[41];
+    char tmdWithCertHash[41];
 } appInformation;
 
 typedef struct _gList_t {

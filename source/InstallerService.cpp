@@ -721,9 +721,16 @@ InstallerService::eResults InstallerService::checkFSTAlreadyValid(const std::str
     return checkFileHash(filePath, hash);
 }
 
-InstallerService::eResults InstallerService::checkTMDValid(const std::string &path, const std::string &hash) {
+InstallerService::eResults InstallerService::checkTMDValid(const std::string &path, const std::string &hash, const std::string &tmdWithCertHash) {
     std::string filePath = path + "/code/title.tmd";
-    return checkFileHash(filePath, hash);
+
+    InstallerService::eResults result = checkFileHash(filePath, hash);
+
+    if(result != SUCCESS){
+        // In some cases the tmd seems to have cert appended
+        return checkFileHash(filePath, tmdWithCertHash);
+    }
+    return result;
 }
 
 InstallerService::eResults InstallerService::checkCOSAlreadyValid(const std::string &path, const std::string &hash) {
