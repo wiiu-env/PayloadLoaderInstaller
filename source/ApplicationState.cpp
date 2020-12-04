@@ -92,12 +92,17 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addText();
         menu.addOption("Press A to shutdown the console", STATE_EXIT_SHUTDOWN);
     } else if (this->state == STATE_REMOVE_CONFIRM_DIALOG) {
-        menu.addText("Are you REALLY sure you want to remove Aroma?");
-        menu.addText("If you have modified some system apps such as the");
-        menu.addText("system menu this could make your console unusable");
-        menu.addText();
-        menu.addOption("Back", STATE_MAIN_MENU);
-        menu.addOption("Remove", STATE_REMOVE_STARTED);
+        if (this->systemXMLAlreadyPatched) {
+            menu.addText("Before you can remove Aroma you need to switch");
+            menu.addText("the system boot title back to the Wii U Menu");
+            menu.addText();
+            menu.addOption("Back", STATE_MAIN_MENU);
+        } else {
+            menu.addText("Are you REALLY sure you want to remove Aroma?");
+            menu.addText();
+            menu.addOption("Back", STATE_MAIN_MENU);
+            menu.addOption("Remove", STATE_REMOVE_STARTED);
+        }
     } else if (this->state == STATE_REMOVE_STARTED) {
         menu.addText("Removing...");
     } else if (this->state == STATE_REMOVE_COLDBOOT) {
@@ -115,9 +120,12 @@ void ApplicationState::changeState(eGameState newState) {
             std::string(this->coldbootTitle->name) : "Unknown title";
         menu.addText(titleId + " (" + titleName + ")");
         menu.addText();
-
         if (this->systemXMLRestorePossible && this->systemXMLAlreadyPatched) {
-            menu.addOption("Switch back to System Menu", STATE_BOOT_SWITCH_SYSMENU);
+            menu.addText("If you have modified the Wii U Menu this could make");
+            menu.addText("your console unusable");
+            menu.addText();
+
+            menu.addOption("Switch back to Wii U Menu", STATE_BOOT_SWITCH_SYSMENU);
         } else if (this->systemXMLPatchAllowed) {
             menu.addOption("Switch to Aroma", STATE_BOOT_SWITCH_AROMA);
         } else if (this->systemXMLPatchPossible) {
