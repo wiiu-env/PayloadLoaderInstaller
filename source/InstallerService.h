@@ -75,7 +75,7 @@ public:
 
     static eResults checkFSTAlreadyValid(const std::string &path, const std::string &hash);
 
-    static eResults checkTMDValid(const std::string &path, const std::string &hash);
+    static eResults checkTMDValid(const std::string &path, const std::string &hash, const std::string &tmdWithCertHash);
 
     static eResults checkCOSAlreadyValid(const std::string &path, const std::string &hash);
 

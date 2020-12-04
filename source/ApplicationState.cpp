@@ -268,12 +268,12 @@ ApplicationState::ApplicationState() {
 void ApplicationState::checkPatchPossible() {
     DEBUG_FUNCTION_LINE("Check patch possible");
 
-    InstallerService::eResults result;
+    this->fstAlreadyPatched = (InstallerService::checkFSTAlreadyValid(this->appInfo->path, this->appInfo->fstHash) == InstallerService::SUCCESS);
+    this->rpxAlreadyPatched = (InstallerService::checkRPXAlreadyValid(this->appInfo->path, RPX_HASH) == InstallerService::SUCCESS);
+    this->cosAlreadyPatched = (InstallerService::checkCOSAlreadyValid(this->appInfo->path, this->appInfo->cosHash) == InstallerService::SUCCESS);
+    this->tmdValid = (InstallerService::checkTMDValid(this->appInfo->path, this->appInfo->tmdHash, this->appInfo->tmdWithCertHash) == InstallerService::SUCCESS);
 
-    this->fstAlreadyPatched = ((result = InstallerService::checkFSTAlreadyValid(this->appInfo->path, this->appInfo->fstHash)) == InstallerService::SUCCESS);
-    this->rpxAlreadyPatched = ((result = InstallerService::checkRPXAlreadyValid(this->appInfo->path, RPX_HASH)) == InstallerService::SUCCESS);
-    this->cosAlreadyPatched = ((result = InstallerService::checkCOSAlreadyValid(this->appInfo->path, this->appInfo->cosHash)) == InstallerService::SUCCESS);
-    this->tmdValid = ((result = InstallerService::checkTMDValid(this->appInfo->path, this->appInfo->tmdHash)) == InstallerService::SUCCESS);
+    InstallerService::eResults result;
 
     this->fstPatchPossible = ((result = InstallerService::checkFST(this->appInfo->path, this->appInfo->fstHash)) == InstallerService::SUCCESS);
     if (result != InstallerService::SUCCESS) {
