@@ -14,7 +14,8 @@ public:
         ERROR_NONE,
         ERROR_IOSUHAX_FAILED,
         ERROR_NO_APP_INSTALLED,
-        ERROR_INSTALLER_ERROR
+        ERROR_INSTALLER_ERROR,
+        ERROR_UNEXPECTED_STATE
     };
 
     enum eGameState {
@@ -82,10 +83,11 @@ private:
 
     bool removalPossible = false;
     bool installPossible = false;
-    bool alreadyInstalled = false;
+    bool alreadyInstalledAndUpdated = false;
 
     bool systemXMLPatchPossible = false;
     bool systemXMLPatchAllowed = false;
+    bool systemXMLPatchAllowedButNoRPXCheck = false;
     bool systemXMLAlreadyPatched = false;
     bool systemXMLRestorePossible = false;
 

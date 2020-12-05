@@ -59,24 +59,40 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addText();
         menu.addOption("Exit", STATE_EXIT_SYSMENU);
     } else if (this->state == STATE_MAIN_MENU) {
-        menu.addText("Aroma " + std::string(alreadyInstalled ? "is" : "can be") + " installed to:");
+        menu.addText("Aroma " + std::string(this->alreadyInstalledAndUpdated ? "is" : "can be") + " installed to:");
         menu.addText(std::string(appInfo->appName));
         menu.addText();
-        menu.addOption("Install", STATE_INSTALL_CONFIRM_DIALOG);
+        menu.addOption("Install / Update", STATE_INSTALL_CONFIRM_DIALOG);
         menu.addOption("Boot options", STATE_BOOT_MENU);
         if (this->removalPossible) {
             menu.addOption("Remove", STATE_REMOVE_CONFIRM_DIALOG);
         }
         menu.addOption("Exit", STATE_EXIT_SYSMENU);
     } else if (this->state == STATE_INSTALL_CONFIRM_DIALOG) {
-        menu.addText("Are you REALLY sure you want to install Aroma?");
-        menu.addText("Installing could permanently damage your console");
-        menu.addText();
-        menu.addText("After the installation you can NO longer use:");
-        menu.addText("- " + std::string(appInfo->appName));
-        menu.addText();
-        menu.addOption("Back", STATE_MAIN_MENU);
-        menu.addOption("Install", STATE_INSTALL_STARTED);
+        if (this->alreadyInstalledAndUpdated) {
+            menu.addText("Everything is already up to date.");
+            menu.addText();
+            menu.addOption("Back", STATE_MAIN_MENU);
+        } else {
+            if (this->coldbootTitleId == this->appInfo->titleId) {
+                menu.addText("Before you can install/update Aroma you need to change");
+                menu.addText("the coldboot title back to Wii U Menu");
+                menu.addText();
+                menu.addOption("Back", STATE_MAIN_MENU);
+
+            } else {
+                menu.addText("Are you REALLY sure you want to install Aroma?");
+                menu.addText("Installing could permanently damage your console");
+                menu.addText();
+                menu.addText("After the installation the following app will turn into");
+                menu.addText("a payload.elf loader. Loading it without a sd card will");
+                menu.addText("ALWAYS open the Wii U Menu");
+                menu.addText("- " + std::string(appInfo->appName));
+                menu.addText();
+                menu.addOption("Back", STATE_MAIN_MENU);
+                menu.addOption("Install", STATE_INSTALL_STARTED);
+            }
+        }
     } else if (this->state == STATE_INSTALL_STARTED) {
         menu.addText("Installing...");
     } else if (this->state == STATE_INSTALL_BACKUP) {
@@ -128,6 +144,11 @@ void ApplicationState::changeState(eGameState newState) {
             menu.addOption("Switch back to Wii U Menu", STATE_BOOT_SWITCH_SYSMENU);
         } else if (this->systemXMLPatchAllowed) {
             menu.addOption("Switch to Aroma", STATE_BOOT_SWITCH_AROMA);
+        } else if (this->systemXMLPatchAllowedButNoRPXCheck) {
+            menu.addText("Your RPX is not as expected. You probably");
+            menu.addText("need to update or re-install Aroma first.");
+            menu.addText();
+            menu.addOption("Back", STATE_MAIN_MENU);
         } else if (this->systemXMLPatchPossible) {
             menu.addText("To change the system boot title to Aroma, you need to");
             menu.addText("launch this installer from an already running Aroma");
@@ -216,8 +237,11 @@ void ApplicationState::update(Input *input) {
         }
     } else if (this->state == STATE_REMOVE_STARTED) {
         OSEnableHomeButtonMenu(false);
+
         if (this->systemXMLAlreadyPatched) {
-            changeState(STATE_REMOVE_COLDBOOT);
+            // It's only possible to remove aroma when it's not coldbooting into aroma.
+            //    changeState(STATE_REMOVE_COLDBOOT);
+            setError(ERROR_INSTALLER_ERROR);
         } else {
             changeState(STATE_REMOVE_AROMA);
         }
@@ -293,7 +317,7 @@ void ApplicationState::checkPatchPossible() {
     }
 
     this->installPossible = this->fstPatchPossible && this->cosPatchPossible && this->tmdValid;
-    this->alreadyInstalled = this->fstAlreadyPatched && this->rpxAlreadyPatched && this->cosAlreadyPatched;
+    this->alreadyInstalledAndUpdated = this->fstAlreadyPatched && this->cosAlreadyPatched && this->tmdValid && this->rpxAlreadyPatched;
 
     changeState(STATE_CHECK_COLDBOOT_STATUS);
 }
@@ -301,7 +325,10 @@ void ApplicationState::checkPatchPossible() {
 void ApplicationState::checkColdbootStatus() {
     DEBUG_FUNCTION_LINE("Check coldboot status");
 
+    // Read the current coldboot title from the system.xml
     this->coldbootTitleId = InstallerService::getColdbootTitleId("storage_slc_installer:/config");
+
+    // Try getting more information about the current coldboot title.
     this->coldbootTitle = nullptr;
     for (int i = 0; GameList[i].tid != 0; i++) {
         if (GameList[i].tid == this->coldbootTitleId) {
@@ -314,12 +341,14 @@ void ApplicationState::checkColdbootStatus() {
 
     this->systemMenuTitleId = InstallerService::getSystemMenuTitleId();
 
+    // Check if setting the title id to H&S results in a hash we are expecting
     this->systemXMLPatchPossible = ((result = InstallerService::checkSystemXML("storage_slc_installer:/config", this->appInfo->titleId)) == InstallerService::SUCCESS);
     if (result != InstallerService::SUCCESS) {
         DEBUG_FUNCTION_LINE("ERROR: %s", InstallerService::ErrorMessage(result).c_str());
     }
 
     if (this->systemMenuTitleId) {
+        // Check if setting the title id back to Wii U menu results in a hash we are expecting
         this->systemXMLRestorePossible = ((result = InstallerService::checkSystemXML("storage_slc_installer:/config", *this->systemMenuTitleId)) == InstallerService::SUCCESS);
         if (result != InstallerService::SUCCESS) {
             DEBUG_FUNCTION_LINE("ERROR: %s", InstallerService::ErrorMessage(result).c_str());
@@ -328,9 +357,17 @@ void ApplicationState::checkColdbootStatus() {
         this->systemXMLRestorePossible = false;
     }
 
-    this->systemXMLAlreadyPatched = (this->coldbootTitleId == this->appInfo->titleId);
+    if (this->systemMenuTitleId) {
+        // If we are not booting into the Wii U menu, we know it's already patched.
+        this->systemXMLAlreadyPatched = (this->coldbootTitleId != *this->systemMenuTitleId);
+    } else {
+        // If we for some fail to get the "systemMenuTitleId" we can still if the system.xml is patched
+        // by comparing with the H&S title id
+        this->systemXMLAlreadyPatched = (this->coldbootTitleId == this->appInfo->titleId);
+    }
 
-    this->systemXMLPatchAllowed = this->systemXMLPatchPossible && this->alreadyInstalled && InstallerService::isColdBootAllowed();
+    this->systemXMLPatchAllowed = this->systemXMLPatchPossible && this->alreadyInstalledAndUpdated && InstallerService::isColdBootAllowed();
+    this->systemXMLPatchAllowedButNoRPXCheck = this->systemXMLPatchPossible && this->fstAlreadyPatched && this->cosAlreadyPatched && this->tmdValid && InstallerService::isColdBootAllowed();
 
     changeState(STATE_CHECK_REMOVAL_POSSIBLE);
 }
@@ -369,6 +406,8 @@ std::string ApplicationState::ErrorMessage() {
         return "ERROR_IOSUHAX_FAILED";
     } else if (this->error == ERROR_INSTALLER_ERROR) {
         return InstallerService::ErrorMessage(this->installerError);
+    } else if (this->error == ERROR_UNEXPECTED_STATE) {
+        return "ERROR_UNEXPECTED_STATE";
     }
     return "UNKNOWN_ERROR";
 }
@@ -382,6 +421,8 @@ std::string ApplicationState::ErrorDescription() {
         return InstallerService::ErrorDescription(this->installerError);
     } else if (this->error == ERROR_IOSUHAX_FAILED) {
         return "Failed to init IOSUHAX.";
+    } else if (this->error == ERROR_UNEXPECTED_STATE) {
+        return "ERROR_UNEXPECTED_STATE";
     }
     return "UNKNOWN_ERROR";
 }
