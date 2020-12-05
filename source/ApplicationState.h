@@ -72,7 +72,6 @@ public:
 
     std::string ErrorDescription();
 
-    bool installColdboot = false;
     InstallerService::eResults installerError = InstallerService::eResults::SUCCESS;
 
 private:
@@ -91,13 +90,13 @@ private:
     bool systemXMLAlreadyPatched = false;
     bool systemXMLRestorePossible = false;
 
-    eGameState state;
+    eGameState state = STATE_WELCOME_SCREEN;
     eErrorState error = ERROR_NONE;
-    uint64_t coldbootTitleId;
-    _gList_t *coldbootTitle;
+    uint64_t coldbootTitleId = 0;
+    _gList_t *coldbootTitle = nullptr;
     std::optional<uint64_t> systemMenuTitleId;
-    bool fstAlreadyPatched;
-    bool rpxAlreadyPatched;
-    bool cosAlreadyPatched;
-    bool tmdValid;
+    bool fstAlreadyPatched = false;
+    bool rpxAlreadyPatched = false;
+    bool cosAlreadyPatched = false;
+    bool tmdValid = false;
 };

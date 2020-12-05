@@ -12,7 +12,6 @@ bool WiiUScreen::sConsoleHasForeground = true;
 uint32_t WiiUScreen::consoleColor = 0x041F60FF;
 uint32_t WiiUScreen::consoleCursorY = 0;
 
-
 uint32_t WiiUScreen::ProcCallbackAcquired(void *context) {
     MEMHeapHandle heap = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
     if (sBufferSizeTV) {

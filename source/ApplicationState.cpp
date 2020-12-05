@@ -289,7 +289,7 @@ void ApplicationState::update(Input *input) {
 }
 
 ApplicationState::ApplicationState() {
-    menu.setOptionsCallback(std::bind(&ApplicationState::changeState, this, std::placeholders::_1));
+    menu.setOptionsCallback([this](auto &&newState) { changeState(std::forward<decltype(newState)>(newState)); });
     menu.setHeader("Aroma Installer");
     menu.setFooter("By Maschell");
 
