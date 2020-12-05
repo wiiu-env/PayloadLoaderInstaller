@@ -338,10 +338,10 @@ void ApplicationState::checkColdbootStatus() {
 void ApplicationState::checkRemovalPossible() {
     DEBUG_FUNCTION_LINE("Check removal possible");
 
-    this->removalPossible = this->alreadyInstalled;
-    if (this->removalPossible) {
-        this->removalPossible &= this->systemXMLRestorePossible || !this->systemXMLAlreadyPatched;
-    }
+    // We can only restore if a restore of the system.xml is possible or it isn't patched at all.
+    this->removalPossible = !this->systemXMLAlreadyPatched || this->systemXMLRestorePossible;
+
+    // And we can only install if we have a backup.
     if (this->removalPossible) {
         this->removalPossible &= InstallerService::isBackupAvailable(this->appInfo->path);
     }
