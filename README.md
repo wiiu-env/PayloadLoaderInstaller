@@ -1,3 +1,5 @@
+# AromaInstaller
+
 ## Building using the Dockerfile
 
 It's possible to use a docker image for building. This way you don't need anything installed on your host system.
