@@ -18,7 +18,7 @@ constexpr bool strings_equal(char const *a, char const *b) {
     return std::string_view(a) == b;
 }
 
-static_assert(strings_equal(RPX_HASH, "1876737636def537ab085c3a9e1ee58a7430d9d8"), "Built with an untested root.rpx! Remove this check if you really know what you're doing.");
+static_assert(strings_equal(RPX_HASH, "a38b8001dd978741fa52cc95e895dce4cabc527f"), "Built with an untested root.rpx! Remove this check if you really know what you're doing.");
 
 void initIOSUHax();
 
