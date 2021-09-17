@@ -4,3 +4,4 @@ build/
 *.rpx
 *.elf
 CMakeLists.txt
+*.wuhb
