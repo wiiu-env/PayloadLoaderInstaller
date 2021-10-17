@@ -37,7 +37,7 @@ InstallerService::eResults InstallerService::checkCOS(const std::string &path, c
         DEBUG_FUNCTION_LINE("Success! cos.xml is compatible");
         return SUCCESS;
     } else {
-        DEBUG_FUNCTION_LINE("Hash mismatch! cos.xml is NOT compatible. Expected hash: %s actual hash: %s",hash, newHash.c_str());
+        DEBUG_FUNCTION_LINE("Hash mismatch! cos.xml is NOT compatible. Expected hash: %s actual hash: %s", hash, newHash.c_str());
     }
 
     return COS_XML_HASH_MISMATCH;
@@ -203,8 +203,7 @@ std::optional<uint64_t> InstallerService::getSystemMenuTitleId() {
 
     if ((titleList->titleId != 0x0005001010040000L) &&
         (titleList->titleId != 0x0005001010040100L) &&
-        (titleList->titleId != 0x0005001010040200L))
-    {
+        (titleList->titleId != 0x0005001010040200L)) {
         DEBUG_FUNCTION_LINE("Unrecognized System Menu title");
         return {};
     }
@@ -349,12 +348,12 @@ std::string InstallerService::ErrorMessage(InstallerService::eResults error) {
 
 bool InstallerService::isBackupAvailable(const std::string &path) {
     std::string backupList[] = {
-        {"/content/title.fst.bak"},
-        {"/content/cos.xml.bak"  },
-        {"/content/safe.rpx.bak" },
+            {"/content/title.fst.bak"},
+            {"/content/cos.xml.bak"},
+            {"/content/safe.rpx.bak"},
     };
 
-    for (auto &backupEntry : backupList) {
+    for (auto &backupEntry: backupList) {
         std::string backupFile = path + backupEntry;
         std::string backupSha1 = backupFile + ".sha1";
 
@@ -385,12 +384,12 @@ bool InstallerService::isBackupAvailable(const std::string &path) {
 
 InstallerService::eResults InstallerService::restoreAppFiles(const std::string &path) {
     std::string backupList[][2] = {
-        {"/code/title.fst", "/content/title.fst.bak"},
-        {"/code/cos.xml",   "/content/cos.xml.bak"  },
-        {"/code/safe.rpx",  "/content/safe.rpx.bak" },
+            {"/code/title.fst", "/content/title.fst.bak"},
+            {"/code/cos.xml",   "/content/cos.xml.bak"},
+            {"/code/safe.rpx",  "/content/safe.rpx.bak"},
     };
 
-    for (auto &backupOp : backupList) {
+    for (auto &backupOp: backupList) {
         std::string destPath = path + backupOp[0];
         std::string backupPath = path + backupOp[1];
 
@@ -407,7 +406,7 @@ InstallerService::eResults InstallerService::restoreAppFiles(const std::string &
         }
     }
 
-    for (auto &backupOp : backupList) {
+    for (auto &backupOp: backupList) {
         std::string backupPath = path + backupOp[1];
         std::string backupSha1Path = backupPath + ".sha1";
         ::remove(backupPath.c_str());
@@ -420,12 +419,12 @@ InstallerService::eResults InstallerService::restoreAppFiles(const std::string &
 
 InstallerService::eResults InstallerService::backupAppFiles(const std::string &path) {
     std::string backupList[][2] = {
-        {"/code/title.fst", "/content/title.fst.bak"},
-        {"/code/cos.xml",   "/content/cos.xml.bak"  },
-        {"/code/safe.rpx",  "/content/safe.rpx.bak" },
+            {"/code/title.fst", "/content/title.fst.bak"},
+            {"/code/cos.xml",   "/content/cos.xml.bak"},
+            {"/code/safe.rpx",  "/content/safe.rpx.bak"},
     };
 
-    for (auto &backupOp : backupList) {
+    for (auto &backupOp: backupList) {
         std::string backupSrc = path + backupOp[0];
         std::string backupDst = path + backupOp[1];
         std::string backupSha1 = backupDst + ".sha1";
@@ -726,7 +725,7 @@ InstallerService::eResults InstallerService::checkTMDValid(const std::string &pa
 
     InstallerService::eResults result = checkFileHash(filePath, hash);
 
-    if(result != SUCCESS){
+    if (result != SUCCESS) {
         // In some cases the tmd seems to have cert appended
         return checkFileHash(filePath, tmdWithCertHash);
     }

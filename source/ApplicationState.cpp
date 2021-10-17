@@ -39,7 +39,7 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addText(std::string(appInfo->appName));
         menu.addText();
         menu.addText("Additional informations:");
-        auto showCheckResult = [&] (const std::string &name, bool canPatch, bool patched) {
+        auto showCheckResult = [&](const std::string &name, bool canPatch, bool patched) {
             if (patched) {
                 menu.addText("[ X ] " + name + " is already patched!");
             } else if (canPatch) {
@@ -133,7 +133,7 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addText("System is currently booting into: ");
         std::string titleId = StringTools::strfmt("%ll016X", this->coldbootTitleId);
         std::string titleName = this->coldbootTitle ?
-            std::string(this->coldbootTitle->name) : "Unknown title";
+                                std::string(this->coldbootTitle->name) : "Unknown title";
         menu.addText(titleId + " (" + titleName + ")");
         menu.addText();
         if (this->systemXMLRestorePossible && this->systemXMLAlreadyPatched) {
@@ -211,7 +211,7 @@ void ApplicationState::update(Input *input) {
         }
     } else if (this->state == STATE_INSTALL_FST) {
         auto result = (this->fstAlreadyPatched) ? InstallerService::SUCCESS :
-            InstallerService::patchFST(this->appInfo->path, this->appInfo->fstHash);
+                      InstallerService::patchFST(this->appInfo->path, this->appInfo->fstHash);
         if (result != InstallerService::SUCCESS) {
             this->installerError = result;
             setError(ERROR_INSTALLER_ERROR);
@@ -220,7 +220,7 @@ void ApplicationState::update(Input *input) {
         }
     } else if (this->state == STATE_INSTALL_COS) {
         auto result = (this->cosAlreadyPatched) ? InstallerService::SUCCESS :
-            InstallerService::patchCOS(this->appInfo->path, this->appInfo->cosHash);
+                      InstallerService::patchCOS(this->appInfo->path, this->appInfo->cosHash);
         if (result != InstallerService::SUCCESS) {
             this->installerError = result;
             setError(ERROR_INSTALLER_ERROR);

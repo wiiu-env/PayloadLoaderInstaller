@@ -7,7 +7,7 @@
 #include "utils/WiiUScreen.h"
 #include "utils/ScreenUtils.h"
 
-template <typename T>
+template<typename T>
 class Menu {
 public:
     Menu() {
@@ -45,7 +45,7 @@ public:
         int selectedDist = selected;
         WiiUScreen::clearScreen();
         printHeader();
-        for (auto &row : content) {
+        for (auto &row: content) {
             std::string cursor = "";
             if (row.first) {
                 cursor += (selectedDist--) ? "  " : "> ";

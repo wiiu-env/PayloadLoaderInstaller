@@ -29,7 +29,7 @@ public:
         FAILED_TO_LOAD_FILE = -18,
     };
 
-    static bool isColdBootAllowed(){
+    static bool isColdBootAllowed() {
         if (OSIsAddressValid(0x00FFFFF8)) {
             uint64_t bootedFrom = *((uint64_t *) 0x00FFFFF8);
             if (
