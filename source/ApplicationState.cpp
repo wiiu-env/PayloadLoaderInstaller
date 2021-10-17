@@ -1,7 +1,7 @@
 #include "ApplicationState.h"
-#include "WiiUScreen.h"
-#include "ScreenUtils.h"
-#include "StringTools.h"
+#include "utils/WiiUScreen.h"
+#include "utils/ScreenUtils.h"
+#include "utils/StringTools.h"
 #include "../build/safe_payload.h"
 #include <sysapp/launch.h>
 #include <iosuhax.h>

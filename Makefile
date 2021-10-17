@@ -35,12 +35,10 @@ BUILD		:=	build
 SOURCES		:=	source \
                 source/common \
                 source/utils \
-                source/fs
+                source/fs \
+                source/input
 INCLUDES	:=	include source
-CONTENT		:=  meta
 ICON		:=  meta/icon.jpg
-TV_SPLASH	:=  meta/icon.jpg
-DRC_SPLASH	:=  meta/icon.jpg
 
 #-------------------------------------------------------------------------------
 # options for code generation

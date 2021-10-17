@@ -4,10 +4,8 @@
 #include <functional>
 #include <utility>
 #include <list>
-#include "Input.h"
-#include "WiiUScreen.h"
-#include "ScreenUtils.h"
-#include "VPADInput.h"
+#include "utils/WiiUScreen.h"
+#include "utils/ScreenUtils.h"
 
 template <typename T>
 class Menu {

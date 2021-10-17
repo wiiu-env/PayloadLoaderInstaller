@@ -7,18 +7,20 @@
 #include <iosuhax.h>
 #include <iosuhax_devoptab.h>
 #include <string_view>
-#include "WiiUScreen.h"
+#include <input/WPADInput.h>
+#include <input/VPADInput.h>
+#include <input/CombinedInput.h>
+#include "utils/WiiUScreen.h"
 #include "InstallerService.h"
 
 #include "ApplicationState.h"
-#include "WPADInput.h"
 #include "../build/safe_payload.h"
 
 constexpr bool strings_equal(char const *a, char const *b) {
     return std::string_view(a) == b;
 }
 
-static_assert(strings_equal(RPX_HASH, "cd4c1459d793a600d12afa33425f43be0cc5dfa3"), "Built with an untested root.rpx! Remove this check if you really know what you're doing.");
+static_assert(strings_equal(RPX_HASH, "1736574cf6c949557aed0c817eb1927e35a9b820"), "Built with an untested root.rpx! Remove this check if you really know what you're doing.");
 
 void initIOSUHax();
 
@@ -30,12 +32,13 @@ bool sIosuhaxMount = false;
 int main_loop() {
     DEBUG_FUNCTION_LINE("Creating state");
     ApplicationState state;
+    CombinedInput baseInput;
     VPadInput vpadInput;
     WPADInput wpadInputs[4] = {
-        WPAD_CHAN_0,
-        WPAD_CHAN_1,
-        WPAD_CHAN_2,
-        WPAD_CHAN_3
+            WPAD_CHAN_0,
+            WPAD_CHAN_1,
+            WPAD_CHAN_2,
+            WPAD_CHAN_3
     };
 
     if (sFSAFd < 0 || !sIosuhaxMount) {
@@ -44,12 +47,17 @@ int main_loop() {
 
     DEBUG_FUNCTION_LINE("Entering main loop");
     while (WHBProcIsRunning()) {
-        vpadInput.update(1280, 720);
-        for (int i = 0; i < 4; i++) {
-            wpadInputs[i].update(1280, 720);
-            vpadInput.combine(wpadInputs[i]);
+        baseInput.reset();
+        if (vpadInput.update(1280, 720)) {
+            baseInput.combine(vpadInput);
         }
-        state.update(&vpadInput);
+        for (auto &wpadInput: wpadInputs) {
+            if (wpadInput.update(1280, 720)) {
+                baseInput.combine(wpadInput);
+            }
+        }
+        baseInput.process();
+        state.update(&baseInput);
         state.render();
     }
 

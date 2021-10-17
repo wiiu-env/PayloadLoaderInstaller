@@ -2,9 +2,9 @@
 
 #include <string>
 #include <optional>
+#include <input/Input.h>
 #include "common/common.h"
 #include "InstallerService.h"
-#include "Input.h"
 #include "Menu.h"
 
 class ApplicationState {
