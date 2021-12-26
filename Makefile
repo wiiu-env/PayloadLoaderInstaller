@@ -15,7 +15,7 @@ TOPDIR ?= $(CURDIR)
 #-------------------------------------------------------------------------------
 APP_NAME	:= PayloadLoader Installer
 APP_SHORTNAME	:= PayloadLoader Installer
-APP_AUTHOR	:= Maschell, rw, GaryOderNichts
+APP_AUTHOR	:=  Maschell, rw-r-r-0644, GaryOderNichts
 
 include $(DEVKITPRO)/wut/share/wut_rules
 

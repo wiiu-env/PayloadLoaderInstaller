@@ -289,8 +289,8 @@ void ApplicationState::update(Input *input) {
 
 ApplicationState::ApplicationState() {
     menu.setOptionsCallback([this](auto &&newState) { changeState(std::forward<decltype(newState)>(newState)); });
-    menu.setFooter("By Maschell");
     menu.setHeader("PayloadLoader Installer");
+    menu.setFooter("By Maschell, rw-r-r-0644, GaryOderNichts");
 
     changeState(STATE_WELCOME_SCREEN);
     DEBUG_FUNCTION_LINE("State has changed to \"STATE_WELCOME_SCREEN\"");
