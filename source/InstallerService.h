@@ -30,7 +30,7 @@ public:
     };
 
     static bool isColdBootAllowed() {
-        if (OSIsAddressValid(0x00FFFFF8)) {
+        /* if (OSIsAddressValid(0x00FFFFF8)) { */
             uint64_t bootedFrom = *((uint64_t *) 0x00FFFFF8);
             if (
                     bootedFrom == 0x000500101004E000L || // H&S JPN
@@ -39,7 +39,7 @@ public:
                     ) {
                 return true;
             }
-        }
+        // }
         return false;
     }
 
