@@ -13,8 +13,8 @@ TOPDIR ?= $(CURDIR)
 # APP_SHORTNAME sets the short name of the application
 # APP_AUTHOR sets the author of the application
 #-------------------------------------------------------------------------------
-APP_NAME	:= Aroma Installer
-APP_SHORTNAME	:= Aroma Installer
+APP_NAME	:= PayloadLoader Installer
+APP_SHORTNAME	:= PayloadLoader Installer
 APP_AUTHOR	:= Maschell, rw, GaryOderNichts
 
 include $(DEVKITPRO)/wut/share/wut_rules
@@ -30,7 +30,7 @@ include $(DEVKITPRO)/wut/share/wut_rules
 # TV_SPLASH is the image displayed during bootup on the TV, leave blank to use default rule
 # DRC_SPLASH is the image displayed during bootup on the DRC, leave blank to use default rule
 #-------------------------------------------------------------------------------
-TARGET		:=	AromaInstaller
+TARGET		:=	PayloadLoaderInstaller
 BUILD		:=	build
 SOURCES		:=	source \
                 source/common \

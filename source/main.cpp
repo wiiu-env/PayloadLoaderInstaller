@@ -66,7 +66,7 @@ int main_loop() {
 
 int main(int argc, char **argv) {
     WHBLogUdpInit();
-    DEBUG_FUNCTION_LINE("Hello from Aroma Installer!");
+    DEBUG_FUNCTION_LINE("Hello from PayloadLoader Installer!");
     WHBProcInit();
     WiiUScreen::Init();
 
