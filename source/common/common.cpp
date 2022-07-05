@@ -11,10 +11,29 @@ systemXMLInformation systemXMLHashInformation[] = {
 };
 
 appInformation supportedApps[] = {
-        {0x000500101004E000L, "Health and Safety Information [JPN]", false, {'\0'}, "9D34DDD91604D781FDB0727AC75021833304964C", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03", "D5BABA20526524977009F7EDE25182D8E41CEFD8", "2CF358E1F51932D305911A6836ED37DB0F94ABE4"}, //v129
-        {0x000500101004E100L, "Health and Safety Information [USA]", false, {'\0'}, "045734666A36C7EF0258A740855886EBDB20D59B", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03", "5249DA6B75FEFADEBFBB18ECC93CC109FA8AA630", "C53C219FB8F777F9AB8F430D6BE4BC034D5638BA"}, //v129
-        {0x000500101004E200L, "Health and Safety Information [PAL]", false, {'\0'}, "130A76F8B36B36D43B88BBC74393D9AFD9CFD2A4", "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03", "87749A8D3EE8694225423953DCF04B01F8DA2F15", "4A29A60E5FBDAF410B7C22ECAEBDDBF29D1A874E"}, //v129
-        {0,                   nullptr,                               false, {'\0'}, {'\0'},                                     {'\0'}},
+        {0x000500101004E000L, "Health and Safety Information [JPN]", false, {'\0'},     //v129
+                "9D34DDD91604D781FDB0727AC75021833304964C",     // FST
+                "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03",     // cos.xml
+                "D5BABA20526524977009F7EDE25182D8E41CEFD8",     // TMD
+                "2CF358E1F51932D305911A6836ED37DB0F94ABE4",     // TMD with certs
+                "A7D6A0C580558DA53760C52939941DBDB5B58B3A",     // TMD (devel)
+                "BF64AB733F674C6D1EE432E6E02F042D129B32CE"},    // TMD with certs (devel)
+        {0x000500101004E100L, "Health and Safety Information [USA]", false, {'\0'},     //v129
+                "045734666A36C7EF0258A740855886EBDB20D59B",     // FST
+                "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03",     // cos.xml
+                "5249DA6B75FEFADEBFBB18ECC93CC109FA8AA630",     // TMD
+                "C53C219FB8F777F9AB8F430D6BE4BC034D5638BA",     // TMD with certs
+                "4D7F318B7DAED083A261E7EDDE0C5124E247FBDE",     // TMD (devel)
+                "9DA434903289616436E8610A03B306351327DDAF"},    // TMD with certs (devel)
+        {0x000500101004E200L, "Health and Safety Information [EUR]", false, {'\0'},     //v129
+                "130A76F8B36B36D43B88BBC74393D9AFD9CFD2A4",     // FST
+                "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03",     // cos.xml
+                "87749A8D3EE8694225423953DCF04B01F8DA2F15",     // TMD
+                "4A29A60E5FBDAF410B7C22ECAEBDDBF29D1A874E",     // TMD with certs
+                "028CE3AB46C1625735E297B57991F334042179A0",     // TMD (devel)
+                "563C633A109349B95D45861018C4CD9676CC7822"},    // TMD with certs (devel)
+        {0,                   nullptr,                               false, {'\0'},
+                {'\0'},                                     {'\0'}},
 };
 
 gList_t GameList[] = {

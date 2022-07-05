@@ -303,6 +303,10 @@ void ApplicationState::checkPatchPossible() {
     this->rpxAlreadyPatched = (InstallerService::checkRPXAlreadyValid(this->appInfo->path, RPX_HASH) == InstallerService::SUCCESS);
     this->cosAlreadyPatched = (InstallerService::checkCOSAlreadyValid(this->appInfo->path, this->appInfo->cosHash) == InstallerService::SUCCESS);
     this->tmdValid = (InstallerService::checkTMDValid(this->appInfo->path, this->appInfo->tmdHash, this->appInfo->tmdWithCertHash) == InstallerService::SUCCESS);
+    if (!this->tmdValid) {
+        // Check the devel hashes.
+        this->tmdValid = (InstallerService::checkTMDValid(this->appInfo->path, this->appInfo->tmdHashDevel, this->appInfo->tmdWithCertHashDevel) == InstallerService::SUCCESS);
+    }
 
     InstallerService::eResults result;
 
