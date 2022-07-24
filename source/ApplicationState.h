@@ -1,15 +1,14 @@
 #pragma once
 
-#include <string>
-#include <optional>
-#include <input/Input.h>
-#include "common/common.h"
 #include "InstallerService.h"
 #include "Menu.h"
+#include "common/common.h"
+#include <input/Input.h>
+#include <optional>
+#include <string>
 
 class ApplicationState {
 public:
-
     enum eErrorState {
         ERROR_NONE,
         ERROR_IOSUHAX_FAILED,
@@ -80,23 +79,23 @@ private:
     bool fstPatchPossible = false;
     bool cosPatchPossible = false;
 
-    bool removalPossible = false;
-    bool installPossible = false;
+    bool removalPossible            = false;
+    bool installPossible            = false;
     bool alreadyInstalledAndUpdated = false;
 
-    bool systemXMLPatchPossible = false;
-    bool systemXMLPatchAllowed = false;
+    bool systemXMLPatchPossible             = false;
+    bool systemXMLPatchAllowed              = false;
     bool systemXMLPatchAllowedButNoRPXCheck = false;
-    bool systemXMLAlreadyPatched = false;
-    bool systemXMLRestorePossible = false;
+    bool systemXMLAlreadyPatched            = false;
+    bool systemXMLRestorePossible           = false;
 
-    eGameState state = STATE_WELCOME_SCREEN;
-    eErrorState error = ERROR_NONE;
+    eGameState state         = STATE_WELCOME_SCREEN;
+    eErrorState error        = ERROR_NONE;
     uint64_t coldbootTitleId = 0;
-    _gList_t *coldbootTitle = nullptr;
+    _gList_t *coldbootTitle  = nullptr;
     std::optional<uint64_t> systemMenuTitleId;
     bool fstAlreadyPatched = false;
     bool rpxAlreadyPatched = false;
     bool cosAlreadyPatched = false;
-    bool tmdValid = false;
+    bool tmdValid          = false;
 };

@@ -1,20 +1,20 @@
 #include <coreinit/debug.h>
 
-#include <whb/proc.h>
 #include <whb/log.h>
 #include <whb/log_udp.h>
+#include <whb/proc.h>
 
+#include "InstallerService.h"
+#include "utils/WiiUScreen.h"
+#include <input/CombinedInput.h>
+#include <input/VPADInput.h>
+#include <input/WPADInput.h>
 #include <iosuhax.h>
 #include <iosuhax_devoptab.h>
 #include <string_view>
-#include <input/WPADInput.h>
-#include <input/VPADInput.h>
-#include <input/CombinedInput.h>
-#include "utils/WiiUScreen.h"
-#include "InstallerService.h"
 
-#include "ApplicationState.h"
 #include "../build/safe_payload.h"
+#include "ApplicationState.h"
 
 constexpr bool strings_equal(char const *a, char const *b) {
     return std::string_view(a) == b;
@@ -26,7 +26,7 @@ void initIOSUHax();
 
 void deInitIOSUHax();
 
-int sFSAFd = -1;
+int sFSAFd         = -1;
 bool sIosuhaxMount = false;
 
 int main_loop() {
@@ -38,8 +38,7 @@ int main_loop() {
             WPAD_CHAN_0,
             WPAD_CHAN_1,
             WPAD_CHAN_2,
-            WPAD_CHAN_3
-    };
+            WPAD_CHAN_3};
 
     if (sFSAFd < 0 || !sIosuhaxMount) {
         state.setError(ApplicationState::eErrorState::ERROR_IOSUHAX_FAILED);
@@ -51,7 +50,7 @@ int main_loop() {
         if (vpadInput.update(1280, 720)) {
             baseInput.combine(vpadInput);
         }
-        for (auto &wpadInput: wpadInputs) {
+        for (auto &wpadInput : wpadInputs) {
             if (wpadInput.update(1280, 720)) {
                 baseInput.combine(wpadInput);
             }
@@ -88,13 +87,13 @@ int main(int argc, char **argv) {
 
 void initIOSUHax() {
     sIosuhaxMount = false;
-    int res = IOSUHAX_Open(nullptr);
+    int res       = IOSUHAX_Open(nullptr);
     if (res < 0) {
         DEBUG_FUNCTION_LINE("IOSUHAX_open failed");
         OSFatal("IOSUHAX_open failed, please start this installer with an CFW");
     } else {
         sIosuhaxMount = true;
-        sFSAFd = IOSUHAX_FSA_Open();
+        sFSAFd        = IOSUHAX_FSA_Open();
         if (sFSAFd < 0) {
             DEBUG_FUNCTION_LINE("IOSUHAX_FSA_Open failed");
         } else {

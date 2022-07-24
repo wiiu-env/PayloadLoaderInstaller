@@ -1,13 +1,13 @@
 #pragma once
 
-#include <cstdint>
 #include <coreinit/mcp.h>
+#include <cstdint>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define VERSION        "v0.1"
+#define VERSION "v0.1"
 
 enum SYSTEM_XML_DEFAULT_TITLE_ID {
     WII_U_MENU_EUR,

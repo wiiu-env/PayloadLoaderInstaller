@@ -3,8 +3,34 @@ name: CI-PR
 on: [pull_request]
 
 jobs:
+  clang-format:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: clang-format
+      run: |
+        docker run --rm -v ${PWD}:/src  wiiuenv/clang-format:13.0.0-2 -r ./source
+  check-build-with-logging:
+    runs-on: ubuntu-18.04
+    needs: clang-format
+    steps:
+    - uses: actions/checkout@v2
+    - name: Checkout submodules using a PAT
+      run: |
+        git config --file .gitmodules --get-regexp url | while read url; do
+          git config --file=.gitmodules $(echo "$url" | sed -E "s/git@github.com:|https:\/\/github.com\//https:\/\/${{ secrets.CI_PAT }}:${{ secrets.CI_PAT }}@github.com\//")
+        done
+        git submodule sync
+        git submodule update --init --recursive
+    - name: build binary with logging
+      run: |
+        docker build . -t builder
+        docker run --rm -v ${PWD}:/project builder make DEBUG=VERBOSE
+        docker run --rm -v ${PWD}:/project builder make clean
+        docker run --rm -v ${PWD}:/project builder make DEBUG=1
   build-binary:
     runs-on: ubuntu-18.04
+    needs: clang-format
     steps:
     - uses: actions/checkout@v2
     - name: Checkout submodules using a PAT

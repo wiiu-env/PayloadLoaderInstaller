@@ -1,11 +1,12 @@
 #pragma once
 
-#include <string>
-#include <functional>
-#include <utility>
-#include <list>
-#include "utils/WiiUScreen.h"
+#include "input/Input.h"
 #include "utils/ScreenUtils.h"
+#include "utils/WiiUScreen.h"
+#include <functional>
+#include <list>
+#include <string>
+#include <utility>
 
 template<typename T>
 class Menu {
@@ -45,7 +46,7 @@ public:
         int selectedDist = selected;
         WiiUScreen::clearScreen();
         printHeader();
-        for (auto &row: content) {
+        for (auto &row : content) {
             std::string cursor = "";
             if (row.first) {
                 cursor += (selectedDist--) ? "  " : "> ";

@@ -1,10 +1,10 @@
 #include "ApplicationState.h"
-#include "utils/WiiUScreen.h"
+#include "../build/safe_payload.h"
 #include "utils/ScreenUtils.h"
 #include "utils/StringTools.h"
-#include "../build/safe_payload.h"
-#include <sysapp/launch.h>
+#include "utils/WiiUScreen.h"
 #include <iosuhax.h>
+#include <sysapp/launch.h>
 
 extern "C" void OSShutdown();
 
@@ -131,9 +131,8 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addOption("Press A to shutdown the console", STATE_EXIT_SHUTDOWN);
     } else if (this->state == STATE_BOOT_MENU) {
         menu.addText("System is currently booting into: ");
-        std::string titleId = StringTools::strfmt("%ll016X", this->coldbootTitleId);
-        std::string titleName = this->coldbootTitle ?
-                                std::string(this->coldbootTitle->name) : "Unknown title";
+        std::string titleId   = StringTools::strfmt("%ll016X", this->coldbootTitleId);
+        std::string titleName = this->coldbootTitle ? std::string(this->coldbootTitle->name) : "Unknown title";
         menu.addText(titleId + " (" + titleName + ")");
         menu.addText();
         if (this->systemXMLRestorePossible && this->systemXMLAlreadyPatched) {
@@ -209,8 +208,7 @@ void ApplicationState::update(Input *input) {
             changeState(STATE_INSTALL_FST);
         }
     } else if (this->state == STATE_INSTALL_FST) {
-        auto result = (this->fstAlreadyPatched) ? InstallerService::SUCCESS :
-                      InstallerService::patchFST(this->appInfo->path, this->appInfo->fstHash);
+        auto result = (this->fstAlreadyPatched) ? InstallerService::SUCCESS : InstallerService::patchFST(this->appInfo->path, this->appInfo->fstHash);
         if (result != InstallerService::SUCCESS) {
             this->installerError = result;
             setError(ERROR_INSTALLER_ERROR);
@@ -218,8 +216,7 @@ void ApplicationState::update(Input *input) {
             changeState(STATE_INSTALL_COS);
         }
     } else if (this->state == STATE_INSTALL_COS) {
-        auto result = (this->cosAlreadyPatched) ? InstallerService::SUCCESS :
-                      InstallerService::patchCOS(this->appInfo->path, this->appInfo->cosHash);
+        auto result = (this->cosAlreadyPatched) ? InstallerService::SUCCESS : InstallerService::patchCOS(this->appInfo->path, this->appInfo->cosHash);
         if (result != InstallerService::SUCCESS) {
             this->installerError = result;
             setError(ERROR_INSTALLER_ERROR);
@@ -302,7 +299,7 @@ void ApplicationState::checkPatchPossible() {
     this->fstAlreadyPatched = (InstallerService::checkFSTAlreadyValid(this->appInfo->path, this->appInfo->fstHash) == InstallerService::SUCCESS);
     this->rpxAlreadyPatched = (InstallerService::checkRPXAlreadyValid(this->appInfo->path, RPX_HASH) == InstallerService::SUCCESS);
     this->cosAlreadyPatched = (InstallerService::checkCOSAlreadyValid(this->appInfo->path, this->appInfo->cosHash) == InstallerService::SUCCESS);
-    this->tmdValid = (InstallerService::checkTMDValid(this->appInfo->path, this->appInfo->tmdHash, this->appInfo->tmdWithCertHash) == InstallerService::SUCCESS);
+    this->tmdValid          = (InstallerService::checkTMDValid(this->appInfo->path, this->appInfo->tmdHash, this->appInfo->tmdWithCertHash) == InstallerService::SUCCESS);
 
     InstallerService::eResults result;
 
@@ -315,7 +312,7 @@ void ApplicationState::checkPatchPossible() {
         DEBUG_FUNCTION_LINE("ERROR: %s", InstallerService::ErrorMessage(result).c_str());
     }
 
-    this->installPossible = this->fstPatchPossible && this->cosPatchPossible && this->tmdValid;
+    this->installPossible            = this->fstPatchPossible && this->cosPatchPossible && this->tmdValid;
     this->alreadyInstalledAndUpdated = this->fstAlreadyPatched && this->cosAlreadyPatched && this->tmdValid && this->rpxAlreadyPatched;
 
     changeState(STATE_CHECK_COLDBOOT_STATUS);
@@ -365,7 +362,7 @@ void ApplicationState::checkColdbootStatus() {
         this->systemXMLAlreadyPatched = (this->coldbootTitleId == this->appInfo->titleId);
     }
 
-    this->systemXMLPatchAllowed = this->systemXMLPatchPossible && this->alreadyInstalledAndUpdated && InstallerService::isColdBootAllowed();
+    this->systemXMLPatchAllowed              = this->systemXMLPatchPossible && this->alreadyInstalledAndUpdated && InstallerService::isColdBootAllowed();
     this->systemXMLPatchAllowedButNoRPXCheck = this->systemXMLPatchPossible && this->fstAlreadyPatched && this->cosAlreadyPatched && this->tmdValid && InstallerService::isColdBootAllowed();
 
     changeState(STATE_CHECK_REMOVAL_POSSIBLE);

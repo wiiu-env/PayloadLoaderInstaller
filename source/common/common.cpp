@@ -1,3 +1,4 @@
+// clang-format off
 #include "common.h"
 
 systemXMLInformation systemXMLHashInformation[] = {
