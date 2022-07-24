@@ -59,4 +59,3 @@ WUT_CHECK_OFFSET(FSTNodeEntry, 0x08, file.size);
 WUT_CHECK_OFFSET(FSTNodeEntry, 0x0C, permission);
 WUT_CHECK_OFFSET(FSTNodeEntry, 0x0E, sectionNumber);
 WUT_CHECK_SIZE(FSTNodeEntry, 0x10);
-

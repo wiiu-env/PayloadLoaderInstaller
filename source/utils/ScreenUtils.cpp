@@ -14,8 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
-#include <coreinit/screen.h>
 #include "ScreenUtils.h"
+#include <coreinit/screen.h>
+#include <stdint.h>
 
 void ScreenUtils::printTextOnScreen(ConsoleScreenID screen, int x, int y, const char *msg) {
     if (!msg) {

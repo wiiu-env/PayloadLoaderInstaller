@@ -1,19 +1,19 @@
-#include "common/common.h"
-#include "utils/logger.h"
-#include "utils/WiiUScreen.h"
-#include "utils/StringTools.h"
-#include "fs/FSUtils.h"
-#include "common/fst_structs.h"
 #include "InstallerService.h"
-#include "utils/utils.h"
+#include "common/common.h"
+#include "common/fst_structs.h"
+#include "fs/FSUtils.h"
+#include "utils/StringTools.h"
+#include "utils/WiiUScreen.h"
+#include "utils/logger.h"
 #include "utils/pugixml.hpp"
+#include "utils/utils.h"
 #include <coreinit/mcp.h>
-#include <string>
-#include <memory>
 #include <cstdlib>
-#include <malloc.h>
-#include <sstream>
 #include <iosuhax.h>
+#include <malloc.h>
+#include <memory>
+#include <sstream>
+#include <string>
 
 InstallerService::eResults InstallerService::checkCOS(const std::string &path, char *hash) {
     std::string cosFilePath = path + "/code/cos.xml";
@@ -100,7 +100,7 @@ InstallerService::eResults InstallerService::checkSystemXML(const std::string &p
 InstallerService::eResults InstallerService::checkFST(const std::string &path, const char *fstHash) {
     std::string fstFilePath = path + "/code/title.fst";
 
-    uint8_t *fstData = nullptr;
+    uint8_t *fstData     = nullptr;
     uint32_t fstDataSize = 0;
 
     DEBUG_FUNCTION_LINE("Trying to load FST from %s", fstFilePath.c_str());
@@ -137,7 +137,7 @@ bool InstallerService::patchCOSXMLData(pugi::xml_document *doc) {
     appEntry.child("codegen_core").first_child().set_value("80000001");
     appEntry.child("max_size").first_child().set_value("40000000");
     appEntry.child("max_codesize").first_child().set_value("00800000");
-    for (pugi::xml_node permission: appEntry.child("permissions").children()) {
+    for (pugi::xml_node permission : appEntry.child("permissions").children()) {
         auto mask = permission.child("mask");
         mask.first_child().set_value("FFFFFFFFFFFFFFFF");
     }
@@ -145,7 +145,7 @@ bool InstallerService::patchCOSXMLData(pugi::xml_document *doc) {
 }
 
 std::optional<appInformation> InstallerService::getInstalledAppInformation() {
-    auto mcpHandle = (int32_t) MCP_Open();
+    auto mcpHandle  = (int32_t) MCP_Open();
     auto titleCount = (uint32_t) MCP_TitleCount(mcpHandle);
     auto *titleList = (MCPTitleListType *) memalign(32, sizeof(MCPTitleListType) * titleCount);
 
@@ -188,7 +188,7 @@ std::optional<appInformation> InstallerService::getInstalledAppInformation() {
 }
 
 std::optional<uint64_t> InstallerService::getSystemMenuTitleId() {
-    auto mcpHandle = (int32_t) MCP_Open();
+    auto mcpHandle  = (int32_t) MCP_Open();
     auto titleCount = (uint32_t) 1;
     auto *titleList = (MCPTitleListType *) memalign(32, sizeof(MCPTitleListType) * titleCount);
 
@@ -241,7 +241,7 @@ InstallerService::eResults InstallerService::patchFSTData(uint8_t *fstData, uint
         DEBUG_FUNCTION_LINE("Section %d can be used as a base", usableSectionIndex);
     }
 
-    auto *rootEntry = (FSTNodeEntry *) (fstData + sizeof(FSTHeader) + numberOfSections * sizeof(FSTSectionEntry));
+    auto *rootEntry          = (FSTNodeEntry *) (fstData + sizeof(FSTHeader) + numberOfSections * sizeof(FSTSectionEntry));
     auto numberOfNodeEntries = rootEntry->directory.lastEntryNumber;
 
     char *stringTableOffset = (char *) ((uint32_t) rootEntry + (sizeof(FSTNodeEntry) * numberOfNodeEntries));
@@ -343,7 +343,6 @@ std::string InstallerService::ErrorMessage(InstallerService::eResults error) {
     } else {
         return "UNKNOWN ERROR";
     }
-
 }
 
 bool InstallerService::isBackupAvailable(const std::string &path) {
@@ -353,7 +352,7 @@ bool InstallerService::isBackupAvailable(const std::string &path) {
             {"/content/safe.rpx.bak"},
     };
 
-    for (auto &backupEntry: backupList) {
+    for (auto &backupEntry : backupList) {
         std::string backupFile = path + backupEntry;
         std::string backupSha1 = backupFile + ".sha1";
 
@@ -373,7 +372,7 @@ bool InstallerService::isBackupAvailable(const std::string &path) {
         }
 
         std::string savedHash = std::string(sha1FileCont, sha1FileCont + sha1FileSize);
-        std::string fileHash = Utils::hashFile(backupFile);
+        std::string fileHash  = Utils::hashFile(backupFile);
         if (fileHash != savedHash) {
             return false;
         }
@@ -385,12 +384,12 @@ bool InstallerService::isBackupAvailable(const std::string &path) {
 InstallerService::eResults InstallerService::restoreAppFiles(const std::string &path) {
     std::string backupList[][2] = {
             {"/code/title.fst", "/content/title.fst.bak"},
-            {"/code/cos.xml",   "/content/cos.xml.bak"},
-            {"/code/safe.rpx",  "/content/safe.rpx.bak"},
+            {"/code/cos.xml", "/content/cos.xml.bak"},
+            {"/code/safe.rpx", "/content/safe.rpx.bak"},
     };
 
-    for (auto &backupOp: backupList) {
-        std::string destPath = path + backupOp[0];
+    for (auto &backupOp : backupList) {
+        std::string destPath   = path + backupOp[0];
         std::string backupPath = path + backupOp[1];
 
         if (!FSUtils::copyFile(backupPath, destPath)) {
@@ -406,8 +405,8 @@ InstallerService::eResults InstallerService::restoreAppFiles(const std::string &
         }
     }
 
-    for (auto &backupOp: backupList) {
-        std::string backupPath = path + backupOp[1];
+    for (auto &backupOp : backupList) {
+        std::string backupPath     = path + backupOp[1];
         std::string backupSha1Path = backupPath + ".sha1";
         ::remove(backupPath.c_str());
         ::remove(backupSha1Path.c_str());
@@ -420,13 +419,13 @@ InstallerService::eResults InstallerService::restoreAppFiles(const std::string &
 InstallerService::eResults InstallerService::backupAppFiles(const std::string &path) {
     std::string backupList[][2] = {
             {"/code/title.fst", "/content/title.fst.bak"},
-            {"/code/cos.xml",   "/content/cos.xml.bak"},
-            {"/code/safe.rpx",  "/content/safe.rpx.bak"},
+            {"/code/cos.xml", "/content/cos.xml.bak"},
+            {"/code/safe.rpx", "/content/safe.rpx.bak"},
     };
 
-    for (auto &backupOp: backupList) {
-        std::string backupSrc = path + backupOp[0];
-        std::string backupDst = path + backupOp[1];
+    for (auto &backupOp : backupList) {
+        std::string backupSrc  = path + backupOp[0];
+        std::string backupDst  = path + backupOp[1];
         std::string backupSha1 = backupDst + ".sha1";
 
         if (FSUtils::CheckFile(backupDst.c_str())) {
@@ -456,7 +455,7 @@ InstallerService::eResults InstallerService::backupAppFiles(const std::string &p
 }
 
 InstallerService::eResults InstallerService::patchFST(const std::string &path, const char *fstHash) {
-    std::string fstFilePath = path + "/code/title.fst";
+    std::string fstFilePath       = path + "/code/title.fst";
     std::string fstBackupFilePath = path + "/code/backup.fst";
     std::string fstTargetFilePath = path + "/code/title.fst";
 
@@ -474,7 +473,7 @@ InstallerService::eResults InstallerService::patchFST(const std::string &path, c
         return FAILED_TO_CHECK_HASH_COPIED_FILES;
     }
 
-    uint8_t *fstData = nullptr;
+    uint8_t *fstData     = nullptr;
     uint32_t fstDataSize = 0;
 
     DEBUG_FUNCTION_LINE("Trying to load FST from %s", fstFilePath.c_str());
@@ -516,7 +515,7 @@ InstallerService::eResults InstallerService::patchFST(const std::string &path, c
 }
 
 InstallerService::eResults InstallerService::patchCOS(const std::string &path, char *hash) {
-    std::string cosFilePath = path + "/code/cos.xml";
+    std::string cosFilePath       = path + "/code/cos.xml";
     std::string cosBackupFilePath = path + "/code/cback.xml";
     std::string cosTargetFilePath = path + "/code/cos.xml";
 
@@ -618,9 +617,9 @@ InstallerService::eResults InstallerService::copyRPX(const std::string &path, co
 }
 
 InstallerService::eResults InstallerService::patchSystemXML(const std::string &path, uint64_t titleId) {
-    std::string inputFile = std::string(path + "/system.xml");
+    std::string inputFile  = std::string(path + "/system.xml");
     std::string backupFile = std::string(path + "/sbackup.xml");
-    std::string finalFile = std::string(path + "/system.xml");
+    std::string finalFile  = std::string(path + "/system.xml");
 
     if (!FSUtils::copyFile(inputFile, backupFile)) {
         DEBUG_CONSOLE_LOG("Failed to copy files");
@@ -743,7 +742,7 @@ InstallerService::eResults InstallerService::checkRPXAlreadyValid(const std::str
 }
 
 InstallerService::eResults InstallerService::checkFileHash(const std::string &filePath, const std::string &hash) {
-    uint8_t *fileData = nullptr;
+    uint8_t *fileData     = nullptr;
     uint32_t fileDataSize = 0;
 
     if (FSUtils::LoadFileToMem(filePath.c_str(), &fileData, &fileDataSize) < 0) {
@@ -789,4 +788,3 @@ InstallerService::eResults InstallerService::setBootTitle(uint64_t titleId) {
 
     return SUCCESS;
 }
-
