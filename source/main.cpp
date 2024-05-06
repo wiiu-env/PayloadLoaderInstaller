@@ -65,7 +65,7 @@ int main_loop() {
 
 int main(int argc, char **argv) {
     WHBLogUdpInit();
-    DEBUG_FUNCTION_LINE("Hello from PayloadLoader Installer!");
+    DEBUG_FUNCTION_LINE("Hello from Payload-Loader Installer!");
     WHBProcInit();
     WiiUScreen::Init();
 

@@ -21,7 +21,7 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addText();
         menu.addOption("Press A to return to the Wii U Menu.", STATE_EXIT_SYSMENU);
     } else if (this->state == STATE_WELCOME_SCREEN) {
-        menu.addText("Welcome to the PayloadLoader Installer!");
+        menu.addText("Welcome to the Payload-Loader Installer!");
         menu.addText("Do you want to check if an installation is possible?");
         menu.addText();
         menu.addOption("Check", STATE_GET_APP_INFORMATION);
@@ -33,9 +33,9 @@ void ApplicationState::changeState(eGameState newState) {
     } else if (this->state == STATE_CHECK_COLDBOOT_STATUS) {
         menu.addText("Check if coldboot can be enabled.");
     } else if (this->state == STATE_CHECK_REMOVAL_POSSIBLE) {
-        menu.addText("Check if PayloadLoader can be removed.");
+        menu.addText("Check if Payload-Loader can be removed.");
     } else if (this->state == STATE_APP_INCOMPATIBLE) {
-        menu.addText("Sorry, PayloadLoader cannot be safely installed to:");
+        menu.addText("Sorry, Payload-Loader cannot be safely installed to:");
         menu.addText(std::string(appInfo->appName));
         menu.addText();
         menu.addText("Additional informations:");
@@ -59,7 +59,7 @@ void ApplicationState::changeState(eGameState newState) {
         menu.addText();
         menu.addOption("Exit", STATE_EXIT_SYSMENU);
     } else if (this->state == STATE_MAIN_MENU) {
-        menu.addText("PayloadLoader " + std::string(this->alreadyInstalledAndUpdated ? "is" : "can be") + " installed to:");
+        menu.addText("Payload-Loader " + std::string(this->alreadyInstalledAndUpdated ? "is" : "can be") + " installed to:");
         menu.addText(std::string(appInfo->appName));
         menu.addText();
         menu.addOption("Install / Update", STATE_INSTALL_CONFIRM_DIALOG);
@@ -75,13 +75,13 @@ void ApplicationState::changeState(eGameState newState) {
             menu.addOption("Back", STATE_MAIN_MENU);
         } else {
             if (this->coldbootTitleId == this->appInfo->titleId) {
-                menu.addText("Before you can install/update PayloadLoader you need to change");
+                menu.addText("Before you can install/update Payload-Loader you need to change");
                 menu.addText("the coldboot title back to Wii U Menu");
                 menu.addText();
                 menu.addOption("Back", STATE_MAIN_MENU);
 
             } else {
-                menu.addText("Are you REALLY sure you want to install PayloadLoader?");
+                menu.addText("Are you REALLY sure you want to install Payload-Loader?");
                 menu.addText("Installing could permanently damage your console");
                 menu.addText();
                 menu.addText("After the installation the following app will turn into");
@@ -104,17 +104,17 @@ void ApplicationState::changeState(eGameState newState) {
     } else if (this->state == STATE_INSTALL_RPX) {
         menu.addText("... install safe.rpx");
     } else if (this->state == STATE_INSTALL_SUCCESS) {
-        menu.addText("PayloadLoader was successfully installed");
+        menu.addText("Payload-Loader was successfully installed");
         menu.addText();
         menu.addOption("Press A to shutdown the console", STATE_EXIT_SHUTDOWN);
     } else if (this->state == STATE_REMOVE_CONFIRM_DIALOG) {
         if (this->systemXMLAlreadyPatched) {
-            menu.addText("Before you can remove PayloadLoader you need to switch");
+            menu.addText("Before you can remove Payload-Loader you need to switch");
             menu.addText("the system boot title back to the Wii U Menu");
             menu.addText();
             menu.addOption("Back", STATE_MAIN_MENU);
         } else {
-            menu.addText("Are you REALLY sure you want to remove PayloadLoader?");
+            menu.addText("Are you REALLY sure you want to remove Payload-Loader?");
             menu.addText();
             menu.addOption("Back", STATE_MAIN_MENU);
             menu.addOption("Remove", STATE_REMOVE_STARTED);
@@ -124,9 +124,9 @@ void ApplicationState::changeState(eGameState newState) {
     } else if (this->state == STATE_REMOVE_COLDBOOT) {
         menu.addText("... remove system.xml coldboot patches");
     } else if (this->state == STATE_REMOVE_PAYLOAD_LOADER) {
-        menu.addText("... remove PayloadLoader application patches");
+        menu.addText("... remove Payload-Loader application patches");
     } else if (this->state == STATE_REMOVE_SUCCESS) {
-        menu.addText("PayloadLoader was successfully removed");
+        menu.addText("Payload-Loader was successfully removed");
         menu.addText();
         menu.addOption("Press A to shutdown the console", STATE_EXIT_SHUTDOWN);
     } else if (this->state == STATE_BOOT_MENU) {
@@ -142,19 +142,19 @@ void ApplicationState::changeState(eGameState newState) {
 
             menu.addOption("Switch back to Wii U Menu", STATE_BOOT_SWITCH_SYSMENU);
         } else if (this->systemXMLPatchAllowed) {
-            menu.addOption("Switch to PayloadLoader", STATE_BOOT_SWITCH_PAYLOAD_LOADER);
+            menu.addOption("Switch to Payload-Loader", STATE_BOOT_SWITCH_PAYLOAD_LOADER);
         } else if (this->systemXMLPatchAllowedButNoRPXCheck) {
             menu.addText("Your RPX is not as expected. You probably");
-            menu.addText("need to update or re-install PayloadLoader first.");
+            menu.addText("need to update or re-install Payload-Loader first.");
             menu.addText();
         } else if (this->systemXMLPatchPossible) {
-            menu.addText("To change the system boot title to PayloadLoader, you need to");
-            menu.addText("launch this installer from an already running PayloadLoader");
+            menu.addText("To change the system boot title to Payload-Loader, you need to");
+            menu.addText("launch this installer from an already running Payload-Loader");
             menu.addText("instance, in order to verify that the installation");
             menu.addText("is working properly.");
             menu.addText();
-            menu.addText("After installing PayloadLoader, reboot the console, open the");
-            menu.addText("Health & Safety app and relaunch the PayloadLoader installer.");
+            menu.addText("After installing Payload-Loader, reboot the console, open the");
+            menu.addText("Health & Safety app and relaunch the Payload-Loader installer.");
             menu.addText();
         } else {
             menu.addText("Sorry, your system.xml file has not yet been tested");
@@ -286,7 +286,7 @@ void ApplicationState::update(Input *input) {
 
 ApplicationState::ApplicationState() {
     menu.setOptionsCallback([this](auto &&newState) { changeState(std::forward<decltype(newState)>(newState)); });
-    menu.setHeader("PayloadLoader Installer");
+    menu.setHeader("Payload-Loader Installer");
     menu.setFooter("By Maschell, rw-r-r-0644, GaryOderNichts");
 
     changeState(STATE_WELCOME_SCREEN);
