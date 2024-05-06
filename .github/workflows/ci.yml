@@ -7,9 +7,9 @@ on:
     
 jobs:
   clang-format:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: clang-format
       run: |
         docker run --rm -v ${PWD}:/src  wiiuenv/clang-format:13.0.0-2 -r ./source
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: clang-format
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Checkout submodules using a PAT
       run: |
         git config --file .gitmodules --get-regexp url | while read url; do
