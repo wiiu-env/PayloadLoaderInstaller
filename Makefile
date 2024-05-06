@@ -13,8 +13,8 @@ TOPDIR ?= $(CURDIR)
 # APP_SHORTNAME sets the short name of the application
 # APP_AUTHOR sets the author of the application
 #-------------------------------------------------------------------------------
-APP_NAME	:= PayloadLoader Installer
-APP_SHORTNAME	:= PayloadLoader Installer
+APP_NAME	:= Payload-Loader Installer
+APP_SHORTNAME	:= Payload-Loader Installer
 APP_AUTHOR	:=  Maschell, rw-r-r-0644, GaryOderNichts
 
 include $(DEVKITPRO)/wut/share/wut_rules
@@ -38,7 +38,7 @@ SOURCES		:=	source \
                 source/fs \
                 source/input
 INCLUDES	:=	include source
-ICON		:=  meta/icon.jpg
+ICON		:=  meta/icon.png
 
 #-------------------------------------------------------------------------------
 # options for code generation
