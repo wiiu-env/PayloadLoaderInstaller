@@ -15,18 +15,24 @@ appInformation supportedApps[] = {
         {0x000500101004E000L, "Health and Safety Information [JPN]", false, {'\0'},     //v129
                 "9D34DDD91604D781FDB0727AC75021833304964C",     // FST
                 "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03",     // cos.xml
-                "D5BABA20526524977009F7EDE25182D8E41CEFD8",     // TMD
-                "2CF358E1F51932D305911A6836ED37DB0F94ABE4"},    // TMD with certs
+                "D5BABA20526524977009F7EDE25182D8E41CEFD8",     // TMD (prod)
+                "2CF358E1F51932D305911A6836ED37DB0F94ABE4",     // TMD with certs (prod)
+                "5463098FDF02D28543940CD717EF3F963CC916AD",     // TMD (devel)
+                "1A8FEB1096FD489F4F60C67FFB22A1BEF802C44A"},    // TMD with certs (devel)
         {0x000500101004E100L, "Health and Safety Information [USA]", false, {'\0'},     //v129
                 "045734666A36C7EF0258A740855886EBDB20D59B",     // FST
                 "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03",     // cos.xml
-                "5249DA6B75FEFADEBFBB18ECC93CC109FA8AA630",     // TMD
-                "C53C219FB8F777F9AB8F430D6BE4BC034D5638BA"},    // TMD with certs
+                "5249DA6B75FEFADEBFBB18ECC93CC109FA8AA630",     // TMD (prod)
+                "C53C219FB8F777F9AB8F430D6BE4BC034D5638BA",     // TMD with certs (prod)
+                "1E716CF01CE2C7F4E604AFE3149DA6BCD41294DB",     // TMD (devel)
+                "434866C03A9CCE4F3A6F7CAEAF296629904CAB85"},    // TMD with certs (devel)
         {0x000500101004E200L, "Health and Safety Information [PAL]", false, {'\0'},     //v129
                 "130A76F8B36B36D43B88BBC74393D9AFD9CFD2A4",     // FST
                 "F6EBF7BC8AE3AF3BB8A42E0CF3FDA051278AEB03",     // cos.xml
-                "87749A8D3EE8694225423953DCF04B01F8DA2F15",     // TMD
-                "4A29A60E5FBDAF410B7C22ECAEBDDBF29D1A874E"},    // TMD with certs
+                "87749A8D3EE8694225423953DCF04B01F8DA2F15",     // TMD (prod)
+                "4A29A60E5FBDAF410B7C22ECAEBDDBF29D1A874E",     // TMD with certs (prod)
+                "00D0EDA5CBB5D63588B1F96A1F11A0FC0F63524E",     // TMD (devel)
+                "4B3B50FB42FBE67793EAF08FB7B5A10DF7F89A8C"},    // TMD with certs (devel)
         {0, nullptr, false, {'\0'}, {'\0'}, {'\0'}},
 };
 
