@@ -36,6 +36,13 @@ appInformation supportedApps[] = {
         {0, nullptr, false, {'\0'}, {'\0'}, {'\0'}},
 };
 
+#define MCP_REGION_ALL (MCP_REGION_JAPAN | \
+                        MCP_REGION_USA | \
+                        MCP_REGION_EUROPE | \
+                        MCP_REGION_CHINA | \
+                        MCP_REGION_KOREA | \
+                        MCP_REGION_TAIWAN)
+
 gList_t GameList[] = {
         {0x0005001010040000L, "Wii U Menu [JPN]",                                           MCP_REGION_JAPAN},
         {0x0005001010040100L, "Wii U Menu [USA]",                                           MCP_REGION_USA},
@@ -132,5 +139,10 @@ gList_t GameList[] = {
         {0x00050000101E6F00L, "Pokemon Ranger: Hikari no Kiseki [JPN]",                     MCP_REGION_JAPAN},
         {0x00050000101E7000L, "Pokemon Ranger: Guardian Signs [USA]",                       MCP_REGION_USA},
         {0x00050000101E7100L, "Pokemon Ranger: Guardian Signs [PAL]",                       MCP_REGION_EUROPE},
-        {0,                   "",                                                           MCP_REGION_JAPAN},
+
+        (0x000500101F7001FFL, "DEVMENU",                                                    MCP_REGION_ALL},
+        {0x000500101F700500L, "System Config Tool",                                         MCP_REGION_ALL},
+        {0x000500101FA81000L, "Kiosk Menu",                                                 MCP_REGION_ALL},
+
+        {0, "", MCP_REGION_JAPAN},
 };
